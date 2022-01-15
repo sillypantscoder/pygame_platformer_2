@@ -60,10 +60,15 @@ while running:
 					# Player is bumping into left side of platform!
 					v[0] = -1
 					pygame.draw.line(screen, (0, 255, 0), platform.topleft, platform.bottomleft, 5)
-				if player.left - platform.right > -5:
+				elif player.left - platform.right > -5:
 					# Player is bumping into right side of platform!
 					v[0] = 1
 					pygame.draw.line(screen, (0, 255, 0), platform.topright, platform.bottomright, 5)
+				elif platform.bottom - player.top > -10:
+					# Player is whacking into the top of a platform!
+					v[1] = 0
+					playerpos[1] = platform.bottom
+					pygame.draw.line(screen, (0, 255, 0), platform.bottomleft, platform.bottomright, 5)
 	# FLIP -----------------
 	pygame.display.flip()
 	c.tick(60)
