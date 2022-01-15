@@ -1,4 +1,4 @@
-from turtle import right
+import random
 import pygame
 
 playerpos = [100, 0]
@@ -6,7 +6,7 @@ v = [0, 0]
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-WORLD = [[0, 1, 1, 1], [0, 0, 0, 1], [0, 1, 1]]
+WORLD = [[random.choice([0, 1]) for x in range(10)] for y in range(10)]
 CELLSIZE = 50
 
 screen = pygame.display.set_mode([500, 500])
