@@ -69,6 +69,9 @@ while running:
 					v[1] = 0
 					playerpos[1] = platform.bottom
 					pygame.draw.line(screen, (0, 255, 0), platform.bottomleft, platform.bottomright, 5)
+	# Respawning
+	if playerpos[1] > 500:
+		playerpos = [100, 0]
 	# FLIP -----------------
 	pygame.display.flip()
 	c.tick(60)
