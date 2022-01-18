@@ -1,5 +1,9 @@
 import random
 import pygame
+import json
+
+pygame.init()
+pygame.font.init()
 
 playerpos = [100, 0]
 v = [0, 0]
@@ -12,12 +16,45 @@ LIGHTRED = (255, 180, 180)
 RED = (255, 0, 0)
 WORLD = [[random.choice([0, 1]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[0])]
 CELLSIZE = 50
+FONT = pygame.font.Font(pygame.font.get_default_font(), 50)
+c = pygame.time.Clock()
 
 screen = pygame.display.set_mode([500, 500])
+
+# WORLD SELECTION -----------------------------------------
+
+w = True
+
+running = True
+while running:
+	for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				running = False
+				# User clicked close button
+			if event.type == pygame.MOUSEBUTTONUP:
+				w = not w
+	screen.fill(WHITE)
+	if w:
+		screen.blit(FONT.render("Generate new world", True, BLACK), (0, 0))
+	else:
+		screen.blit(FONT.render("Load world file", True, BLACK), (0, 0))
+	c.tick(60)
+	pygame.display.flip()
+
+if w:
+	f = open("world.json", "w")
+	f.write(json.dumps(WORLD).replace("], [", "],\n ["))
+	f.close()
+else:
+	f = open("world.json", "r")
+	WORLD = json.loads(f.read())
+	f.close()
+
+# PLAYING -------------------------------------------------
+
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
 running = True
-c = pygame.time.Clock()
 while running:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
