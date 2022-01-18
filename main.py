@@ -14,34 +14,44 @@ BLACK = (0, 0, 0)
 GRAY = (180, 180, 180)
 LIGHTRED = (255, 180, 180)
 RED = (255, 0, 0)
-WORLD = [[random.choice([0, 1]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[0])]
+GREEN = (0, 255, 0)
+WORLD = [[random.choice([0, 1]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
 CELLSIZE = 50
-FONT = pygame.font.Font(pygame.font.get_default_font(), 50)
+FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
 
 screen = pygame.display.set_mode([500, 500])
 
 # WORLD SELECTION -----------------------------------------
 
-w = True
+wr = True
 
 running = True
 while running:
+	screen.fill(WHITE)
+	if wr:
+		w = FONT.render("Generate new world", True, BLACK)
+	else:
+		w = FONT.render("Load world file", True, BLACK)
+	screen.blit(w, (0, 0))
+	wy = w.get_height()
+	g = FONT.render("Go >", True, GREEN)
+	screen.blit(g, (0, wy))
+	gy = g.get_height() + wy
 	for event in pygame.event.get():
 			if event.type == pygame.QUIT:
-				running = False
+				pygame.quit(); exit()
 				# User clicked close button
 			if event.type == pygame.MOUSEBUTTONUP:
-				w = not w
-	screen.fill(WHITE)
-	if w:
-		screen.blit(FONT.render("Generate new world", True, BLACK), (0, 0))
-	else:
-		screen.blit(FONT.render("Load world file", True, BLACK), (0, 0))
+				pos = pygame.mouse.get_pos()
+				if pos[1] < wy:
+					wr = not wr
+				elif pos[1] < gy:
+					running = False
 	c.tick(60)
 	pygame.display.flip()
 
-if w:
+if wr:
 	f = open("world.json", "w")
 	f.write(json.dumps(WORLD).replace("], [", "],\n ["))
 	f.close()
