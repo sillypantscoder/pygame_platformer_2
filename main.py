@@ -24,12 +24,10 @@ while running:
 			running = False
 			# User clicked close button
 	keys = pygame.key.get_pressed()
-	if keys[pygame.K_LEFT] and can_move_left:
+	if keys[pygame.K_LEFT]:
 		v[0] -= 1
-	if keys[pygame.K_RIGHT] and can_move_right:
+	if keys[pygame.K_RIGHT]:
 		v[0] += 1
-	can_move_left = True
-	can_move_right = True
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
