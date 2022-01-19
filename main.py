@@ -105,7 +105,7 @@ while running:
 				v[1] = 0
 				playerpos[1] = platform.top - 10
 				if keys[pygame.K_UP]:
-					v[1] = -3
+					v[1] = -3.1
 				pygame.draw.line(totalScreen, (0, 255, 0), platform.topleft, platform.topright, 5)
 			else:
 				if platform.left - player.right > -5:
