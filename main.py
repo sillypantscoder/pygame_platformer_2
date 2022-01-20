@@ -15,7 +15,7 @@ GRAY = (180, 180, 180)
 LIGHTRED = (255, 180, 180)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
-WORLD = [[random.choice([0, 1]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
+WORLD = [[random.choice([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
 CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
@@ -64,6 +64,16 @@ else:
 
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
+def explosion(cx, cy, rad):
+	more = []
+	for x in range(cx - rad, cx + rad):
+		for y in range(cy - rad, cy + rad):
+			if WORLD[x][y] == 2:
+				more.append([x, y])
+			WORLD[x][y] = 0
+	for l in more:
+		explosion(*l, rad)
+
 running = True
 while running:
 	for event in pygame.event.get():
@@ -88,10 +98,15 @@ while running:
 	for x in range(len(WORLD)):
 		for y in range(len(WORLD[x])):
 			cell = WORLD[x][y]
+			cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
 			if cell == 1:
-				pygame.draw.rect(totalScreen, BLACK, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
-				if pygame.Rect(playerpos[0], playerpos[1] + 1, 10, 10).colliderect(pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)):
-					touching_platforms.append(pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
+				pygame.draw.rect(totalScreen, BLACK, cellrect)
+				if pygame.Rect(playerpos[0], playerpos[1] + 1, 10, 10).colliderect(cellrect):
+					touching_platforms.append(cellrect)
+			if cell == 2:
+				pygame.draw.rect(totalScreen, RED, cellrect)
+				if pygame.Rect(playerpos[0], playerpos[1] + 1, 10, 10).colliderect(cellrect):
+					explosion(x, y, 3)
 	# Player v computations
 	v[0] *= 0.5
 	if len(touching_platforms) == 0:
