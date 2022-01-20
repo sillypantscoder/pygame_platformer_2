@@ -16,6 +16,7 @@ GRAY = (180, 180, 180)
 LIGHTRED = (255, 180, 180)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
+BROWN = (28, 2, 0)
 WORLD = [[random.choice([0, 1]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
 CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
@@ -38,7 +39,7 @@ while running:
 			running = False
 			# User clicked close button
 		if event.type == pygame.MOUSEBUTTONUP:
-			WORLD[selectedx][selectedy] = 1 - WORLD[selectedx][selectedy]
+			WORLD[selectedx][selectedy] = (WORLD[selectedx][selectedy] + 1) % 4
 	keys = pygame.key.get_pressed()
 	if keys[pygame.K_LEFT]:
 		playerpos[0] -= 2
@@ -64,6 +65,10 @@ while running:
 			cell = WORLD[x][y]
 			if cell == 1:
 				pygame.draw.rect(totalScreen, BLACK, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
+			if cell == 2:
+				pygame.draw.rect(totalScreen, RED, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
+			if cell == 3:
+				pygame.draw.rect(totalScreen, BROWN, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
 			if pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE).collidepoint(pos):
 				selectedx = x
 				selectedy = y
