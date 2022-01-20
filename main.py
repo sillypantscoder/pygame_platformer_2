@@ -68,6 +68,7 @@ def explosion(cx, cy, rad):
 	more = []
 	for x in range(cx - rad, cx + rad):
 		for y in range(cy - rad, cy + rad):
+			if x < 0 or y < 0 or x > BOARDSIZE[0] or y > BOARDSIZE[1]: continue;
 			if WORLD[x][y] == 2:
 				more.append([x, y])
 			WORLD[x][y] = 0
