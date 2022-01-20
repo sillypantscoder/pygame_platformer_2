@@ -140,6 +140,8 @@ class Mob:
 		self.tickmove()
 	def tickmove(self):
 		pass
+	def despawn(self):
+		pass
 
 class Player(Mob):
 	def tickmove(self):
@@ -150,6 +152,9 @@ class Player(Mob):
 			self.vx += 1
 		if keys[pygame.K_UP] and self.standing:
 			self.vy = -3.1
+	def despawn(self):
+		pygame.quit()
+		exit()
 
 class Monster(Mob):
 	def __init__(self, x, y, color):
@@ -167,15 +172,16 @@ class Monster(Mob):
 			if random.random() < 0.1: self.direction = None
 		else:
 			self.direction = random.choice([1, -1])
+	def despawn(self):
+		if random.random() < 0.3: explosion(round(t.x / BOARDSIZE[0]), round(t.y / BOARDSIZE[1]), 3)
 
 player = Player(100, 0, RED)
 things = []
 
-running = True
-while running:
+while True:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
-			running = False
+			player.despawn()
 			# User clicked close button
 	# DRAWING ------------
 	screen.fill(GRAY)
@@ -204,7 +210,7 @@ while running:
 		t.draw(player.x, player.y)
 		# Despawning
 		if random.random() < 0.005:
-			if random.random() < 0.3: explosion(round(t.x / BOARDSIZE[0]), round(t.y / BOARDSIZE[1]), 3)
+			t.despawn()
 			things.remove(t)
 		# Dying
 		if t.y + 10 > BOARDSIZE[1] * CELLSIZE:
@@ -212,4 +218,3 @@ while running:
 	# FLIP -----------------
 	pygame.display.flip()
 	c.tick(60)
-pygame.quit()
