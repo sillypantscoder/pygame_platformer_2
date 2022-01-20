@@ -12,7 +12,7 @@ GRAY = (180, 180, 180)
 LIGHTRED = (255, 180, 180)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
-WORLD = [[random.choice([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
+WORLD = [[random.choices([0, 1, 2], weights=[25, 25, 1], k=1)[0] for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
 CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
@@ -73,16 +73,18 @@ def explosion(cx, cy, rad):
 		explosion(*l, 3)
 
 class Mob:
-	def __init__(self, x, y):
+	def __init__(self, x, y, color):
 		self.x = x
 		self.y = y
 		self.vx = 0
 		self.vy = 0
+		self.standing = False
+		self.color = color
+	def draw(self, playerx, playery):
+		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 250 - playery)))
 	def tick(self):
 		self.x += self.vx
 		self.y += self.vy
-		pygame.draw.rect(screen, LIGHTRED, pygame.Rect(self.x, self.y, 10, 10).move((250 - self.x, 250 - self.y)))
-		pygame.draw.rect(totalScreen, RED, pygame.Rect(self.x, self.y, 10, 10))
 		touching_platforms = []
 		# World
 		for x in range(len(WORLD)):
@@ -97,6 +99,7 @@ class Mob:
 						explosion(x, y, 3)
 		# Velocity computations
 		self.vx *= 0.5
+		self.standing = False
 		if len(touching_platforms) == 0:
 			self.vy += 0.05
 		else:
@@ -107,8 +110,7 @@ class Mob:
 					# Mob is standing on a platform!
 					self.vy = 0
 					self.y = platform.top - 10
-					if keys[pygame.K_UP]:
-						self.vy = -3.1
+					self.standing = True
 					pygame.draw.line(totalScreen, (0, 255, 0), platform.topleft, platform.topright, 5)
 				else:
 					if platform.left - thismob.right > -5:
@@ -124,12 +126,45 @@ class Mob:
 						self.vy = 0
 						self.y = platform.bottom
 						pygame.draw.line(totalScreen, (0, 255, 0), platform.bottomleft, platform.bottomright, 5)
-		# Respawning
+		# Respawning, Crashing, and Moving
 		if self.y > BOARDSIZE[1] * CELLSIZE:
 			self.x = 100
 			self.y = 0
+		if self.vx > 20 or self.vy > 20 or self.vx < -20 or self.vy < -20:
+			self.vx = 0
+			self.vy = 0
+		self.tickmove()
+	def tickmove(self):
+		pass
 
-player = Mob(100, 0)
+class Player(Mob):
+	def tickmove(self):
+		keys = pygame.key.get_pressed()
+		if keys[pygame.K_LEFT]:
+			self.vx -= 1
+		if keys[pygame.K_RIGHT]:
+			self.vx += 1
+		if keys[pygame.K_UP] and self.standing:
+			self.vy = -3.1
+
+class Monster(Mob):
+	def __init__(self, x, y, color):
+		self.x = x
+		self.y = y
+		self.vx = 0
+		self.vy = 0
+		self.standing = False
+		self.color = color
+		self.direction = None
+	def tickmove(self):
+		if self.direction:
+			self.vx += self.direction
+			if random.random() < 0.1: self.direction = None
+		else:
+			self.direction = random.choice([1, -1])
+
+player = Player(100, 0, RED)
+things = []
 
 running = True
 while running:
@@ -137,11 +172,6 @@ while running:
 		if event.type == pygame.QUIT:
 			running = False
 			# User clicked close button
-	keys = pygame.key.get_pressed()
-	if keys[pygame.K_LEFT]:
-		player.vx -= 1
-	if keys[pygame.K_RIGHT]:
-		player.vx += 1
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
@@ -154,10 +184,21 @@ while running:
 					pygame.draw.rect(totalScreen, BLACK, cellrect)
 				if cell == 2:
 					pygame.draw.rect(totalScreen, RED, cellrect)
-	# Player
+	# Spawning
+	if random.random() < 0.01:
+		things.append(Monster(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE), (0, 255, 0)))
+	# Players & Screen
 	player.tick()
-	# FLIP -----------------
+	for t in things:
+		t.tick()
 	screen.blit(totalScreen, (250 - player.x, 250 - player.y))
+	player.draw(player.x, player.y)
+	for t in things:
+		t.draw(player.x, player.y)
+		# Despawning
+		if random.random() < 0.005 or t.y + 10 > BOARDSIZE[1] * CELLSIZE:
+			things.remove(t)
+	# FLIP -----------------
 	pygame.display.flip()
 	c.tick(60)
 pygame.quit()
