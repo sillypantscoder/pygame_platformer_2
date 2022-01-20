@@ -65,8 +65,8 @@ totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
 def explosion(cx, cy, rad):
 	more = []
-	for x in range(cx - rad, cx + rad):
-		for y in range(cy - rad, cy + rad):
+	for x in range(cx - rad, cx + rad + 1):
+		for y in range(cy - rad, cy + rad + 1):
 			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue;
 			if WORLD[x][y] == 2:
 				more.append([x, y])
@@ -173,7 +173,28 @@ class Monster(Mob):
 		else:
 			self.direction = random.choice([1, -1])
 	def despawn(self):
-		if random.random() < 0.3: explosion(round(t.x / BOARDSIZE[0]), round(t.y / BOARDSIZE[1]), 3)
+		if random.random() < 0.3:
+			explosion(round(self.x / CELLSIZE), round(self.y / CELLSIZE), 3)
+
+class Spawner(Mob):
+	def __init__(self, x, y, color):
+		self.x = x
+		self.y = y
+		self.vx = 0
+		self.vy = 0
+		self.standing = False
+		self.color = color
+		self.ticks = 0
+		self.direction = None
+	def tickmove(self):
+		self.ticks += 1
+		if self.ticks < 60:
+			self.vy = -1
+			self.vx = 0
+		elif self.ticks == 60:
+			self.vx = 0
+			for i in range(random.randint(4, 14)):
+				things.append(Monster(self.x, self.y, (0, 255, 0)))
 
 player = Player(100, 0, RED)
 things = []
@@ -183,6 +204,9 @@ while True:
 		if event.type == pygame.QUIT:
 			player.despawn()
 			# User clicked close button
+		if event.type == pygame.MOUSEBUTTONUP:
+			pos = pygame.mouse.get_pos()
+			things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250), (0, 0, 150)))
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
