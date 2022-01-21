@@ -76,14 +76,14 @@ def explosion(cx, cy, rad):
 	for l in more:
 		explosion(*l, 2)
 
-class Mob:
-	def __init__(self, x, y, color):
+class Entity:
+	def __init__(self, x, y):
 		self.x = x
 		self.y = y
 		self.vx = 0
 		self.vy = 0
 		self.standing = False
-		self.color = color
+		self.color = (255, 0, 0)
 	def draw(self, playerx, playery):
 		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 250 - playery)))
 	def tick(self):
@@ -108,25 +108,25 @@ class Mob:
 			self.vy += 0.05
 		else:
 			for platform in touching_platforms:
-				# Mob is touching a platform!
-				thismob = pygame.Rect(self.x, self.y, 10, 10)
-				if platform.top - thismob.bottom > -10:
-					# Mob is standing on a platform!
+				# Entity is touching a platform!
+				thisEntity = pygame.Rect(self.x, self.y, 10, 10)
+				if platform.top - thisEntity.bottom > -10:
+					# Entity is standing on a platform!
 					self.vy = 0
 					self.y = platform.top - 10
 					self.standing = True
 					pygame.draw.line(totalScreen, (0, 255, 0), platform.topleft, platform.topright, 5)
 				else:
-					if platform.left - thismob.right > -5:
-						# Mob is bumping into left side of platform!
+					if platform.left - thisEntity.right > -5:
+						# Entity is bumping into left side of platform!
 						self.vx = -1
 						pygame.draw.line(totalScreen, (0, 255, 0), platform.topleft, platform.bottomleft, 5)
-					elif thismob.left - platform.right > -5:
-						# Mob is bumping into right side of platform!
+					elif thisEntity.left - platform.right > -5:
+						# Entity is bumping into right side of platform!
 						self.vx = 1
 						pygame.draw.line(totalScreen, (0, 255, 0), platform.topright, platform.bottomright, 5)
-					elif platform.bottom - thismob.top > -10:
-						# Player is whacking into the top of a platform!
+					elif platform.bottom - thisEntity.top > -10:
+						# Entity is whacking into the top of a platform!
 						self.vy = 0
 						self.y = platform.bottom
 						pygame.draw.line(totalScreen, (0, 255, 0), platform.bottomleft, platform.bottomright, 5)
@@ -142,8 +142,11 @@ class Mob:
 		pass
 	def despawn(self):
 		pass
+	def die(self):
+		self.despawn()
+		things.remove(self)
 
-class Player(Mob):
+class Player(Entity):
 	def tickmove(self):
 		keys = pygame.key.get_pressed()
 		if keys[pygame.K_LEFT]:
@@ -156,14 +159,14 @@ class Player(Mob):
 		pygame.quit()
 		exit()
 
-class Monster(Mob):
-	def __init__(self, x, y, color):
+class Monster(Entity):
+	def __init__(self, x, y):
 		self.x = x
 		self.y = y
 		self.vx = 0
 		self.vy = 0
 		self.standing = False
-		self.color = color
+		self.color = (0, 150, 0)
 		self.direction = None
 	def tickmove(self):
 		if self.standing and random.random() < 0.06: self.vy = -3.1
@@ -173,30 +176,52 @@ class Monster(Mob):
 		else:
 			self.direction = random.choice([1, -1])
 	def despawn(self):
-		if random.random() < 0.3:
-			explosion(round(self.x / CELLSIZE), round(self.y / CELLSIZE), 3)
+		things.append(Item(self.x, self.y))
 
-class Spawner(Mob):
-	def __init__(self, x, y, color):
+class ExplodingMonster(Monster):
+	def __init__(self, x, y):
 		self.x = x
 		self.y = y
 		self.vx = 0
 		self.vy = 0
 		self.standing = False
-		self.color = color
+		self.color = (0, 255, 0)
+		self.direction = None
+	def despawn(self):
+		explosion(round(self.x / CELLSIZE), round(self.y / CELLSIZE), 3)
+
+class Spawner(Entity):
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
+		self.vx = 0
+		self.vy = 0
+		self.standing = False
+		self.color = (0, 0, 150)
 		self.ticks = 0
 		self.direction = None
 	def tickmove(self):
-		self.ticks += 1
-		if self.ticks < 60:
-			self.vy = -1
-			self.vx = 0
-		elif self.ticks == 60:
-			self.vx = 0
-			for i in range(random.randint(4, 14)):
-				things.append(Monster(self.x, self.y, (0, 255, 0)))
+		if random.random() < 0.1: things.append(Monster(self.x, self.y))
+		if random.random() < 0.01: things.append(ExplodingMonster(self.x, self.y))
 
-player = Player(100, 0, RED)
+class Item(Entity):
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
+		self.vx = 0
+		self.vy = 1
+		self.standing = False
+		self.img = "amethyst_shard"
+		self.ticks = 0
+		self.direction = None
+		self.img_surface = pygame.transform.scale(pygame.image.load(self.img + ".png"), (10, 10))
+	def draw(self, playerx, playery):
+		screen.blit(self.img_surface, (self.x + (250 - playerx), self.y + (250 - playery)))
+		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(playerx, playery, 10, 10)): self.die()
+	def tickmove(self):
+		if self.vy < 1: self.vy = 1
+
+player = Player(100, 0)
 things = []
 
 while True:
@@ -206,7 +231,7 @@ while True:
 			# User clicked close button
 		if event.type == pygame.MOUSEBUTTONUP:
 			pos = pygame.mouse.get_pos()
-			things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250), (0, 0, 150)))
+			things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250)))
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
@@ -223,7 +248,7 @@ while True:
 					pygame.draw.rect(totalScreen, BROWN, cellrect)
 	# Spawning
 	if random.random() < 0.01:
-		things.append(Monster(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE), (0, 255, 0)))
+		things.append(Monster(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE)))
 	# Players & Screen
 	player.tick()
 	for t in things:
@@ -234,11 +259,11 @@ while True:
 		t.draw(player.x, player.y)
 		# Despawning
 		if random.random() < 0.005:
-			t.despawn()
-			things.remove(t)
+			t.die()
 		# Dying
 		if t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 			things.remove(t)
 	# FLIP -----------------
+	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
 	pygame.display.flip()
 	c.tick(60)
