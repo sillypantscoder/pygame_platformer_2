@@ -144,8 +144,10 @@ class Entity:
 	def despawn(self):
 		pass
 	def die(self):
-		self.despawn()
-		things.remove(self)
+		if self in things:
+			self.despawn()
+			things.remove(self)
+		else: print("Entity " + str(self) + " was removed twice!")
 	def createExplosion(self, rad):
 		explosion(round(self.x / CELLSIZE), round(self.y / CELLSIZE), rad)
 
@@ -263,7 +265,7 @@ while True:
 			# User clicked close button
 		if event.type == pygame.MOUSEBUTTONUP:
 			pos = pygame.mouse.get_pos()
-			things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250)))
+			#things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250)))
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
@@ -296,12 +298,14 @@ while True:
 		elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 			things.remove(t)
 	# ITEMS ----------------
-	if items["danger"] > 10:
+	if items["danger"] >= 10:
 		items["danger"] -= 10
 		player.createExplosion(2)
 	# FLIP -----------------
 	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
-	w = FONT.render(str(items["danger"]), True, BLACK)
+	w = FONT.render(f"{str(items['danger'])} danger items collected", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
+	w = FONT.render(f"{str(len(things))} entities", True, BLACK)
+	screen.blit(w, (0, BOARDSIZE[1]))
 	pygame.display.flip()
 	c.tick(60)
