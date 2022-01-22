@@ -139,7 +139,7 @@ class Entity:
 		if self.vx > 20 or self.vy > 20 or self.vx < -20 or self.vy < -20:
 			self.vx = 0
 			self.vy = 0
-		self.tickmove()
+		if len(things) < 20 or isinstance(self, Player): self.tickmove()
 	def tickmove(self):
 		pass
 	def despawn(self):
@@ -182,8 +182,8 @@ class Monster(Entity):
 		else:
 			self.direction = random.choice([1, -1])
 	def despawn(self):
-		for i in range(random.choice([0, 1, 2])):
-			things.append(Item(self.x, self.y))
+		for i in range(random.choice([0, 1, 2, 3])):
+			things.append(Item(self.x + random.randint(-10, 10), self.y + random.randint(-10, 10)))
 
 class ExplodingMonster(Monster):
 	def __init__(self, x, y):
