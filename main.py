@@ -266,7 +266,9 @@ while True:
 			# User clicked close button
 		if event.type == pygame.MOUSEBUTTONUP:
 			pos = pygame.mouse.get_pos()
-			#things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250)))
+			if items["danger"] >= 15:
+					items["danger"] -= 15
+					things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250)))
 		if event.type == pygame.KEYDOWN:
 			keys = pygame.key.get_pressed()
 			if keys[pygame.K_SPACE]:
@@ -299,7 +301,9 @@ while True:
 	for t in things:
 		t.draw(player.x, player.y)
 		# Despawning
-		if random.random() < 0.005:
+		if random.random() < 0.005 and not isinstance(t, Item):
+			t.die()
+		if random.random() < 0.0001 and isinstance(t, Item):
 			t.die()
 		# Dying
 		elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
