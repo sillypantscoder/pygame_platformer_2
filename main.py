@@ -76,6 +76,7 @@ def explosion(cx, cy, rad):
 				WORLD[x][y] = 0
 	for l in more:
 		explosion(*l, 2)
+	if random.random() < 0.3: things.append(Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE)))
 
 class Entity:
 	def __init__(self, x, y):
@@ -266,6 +267,12 @@ while True:
 		if event.type == pygame.MOUSEBUTTONUP:
 			pos = pygame.mouse.get_pos()
 			#things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250)))
+		if event.type == pygame.KEYDOWN:
+			keys = pygame.key.get_pressed()
+			if keys[pygame.K_SPACE]:
+				if items["danger"] >= 10:
+					items["danger"] -= 10
+					player.createExplosion(2)
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
@@ -297,10 +304,6 @@ while True:
 		# Dying
 		elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 			things.remove(t)
-	# ITEMS ----------------
-	if items["danger"] >= 10:
-		items["danger"] -= 10
-		player.createExplosion(2)
 	# FLIP -----------------
 	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
 	w = FONT.render(f"{str(items['danger'])} danger items collected", True, BLACK)
