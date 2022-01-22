@@ -14,7 +14,7 @@ LIGHTRED = (255, 180, 180)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BROWN = (28, 2, 0)
-WORLD = [[random.choices([0, 1, 2, 3], weights=[10, 25, 2, 1], k=1)[0] for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
+WORLD = [[random.choices([0, 1, 2, 3], weights=[10, 25, 2, 1], k=1)[0] for y in range(BOARDSIZE[1])] for x in range(BOARDSIZE[0])]
 CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
@@ -275,6 +275,10 @@ while True:
 				if items["danger"] >= 10:
 					items["danger"] -= 10
 					player.createExplosion(2)
+			if keys[pygame.K_z]:
+				if items["danger"] >= 5:
+					items["danger"] -= 5
+					things.append(Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE)))
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
@@ -303,7 +307,7 @@ while True:
 		# Despawning
 		if random.random() < 0.005 and not isinstance(t, Item):
 			t.die()
-		if random.random() < 0.0001 and isinstance(t, Item):
+		elif random.random() < 0.0001 and isinstance(t, Item):
 			t.die()
 		# Dying
 		elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
