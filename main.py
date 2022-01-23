@@ -1,4 +1,3 @@
-from msilib.sequence import InstallExecuteSequence
 import random
 import pygame
 import json
@@ -299,7 +298,8 @@ while True:
 					things.append(Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE)))
 			if keys[pygame.K_q]:
 				for t in things:
-					if isinstance(t, Item)
+					if isinstance(t, (Item, Monster)) and not isinstance(t, ScoreItem):
+						t.die()
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
