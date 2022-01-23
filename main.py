@@ -1,3 +1,4 @@
+from msilib.sequence import InstallExecuteSequence
 import random
 import pygame
 import json
@@ -139,7 +140,8 @@ class Entity:
 		if self.vx > 20 or self.vy > 20 or self.vx < -20 or self.vy < -20:
 			self.vx = 0
 			self.vy = 0
-		if len(things) < 20 or isinstance(self, Player): self.tickmove()
+		self.tickmove()
+		if len(things) < 20: self.opt_ai_calc()
 	def tickmove(self):
 		pass
 	def despawn(self):
@@ -151,6 +153,8 @@ class Entity:
 		else: print("Entity " + str(self) + " was removed twice!")
 	def createExplosion(self, rad):
 		explosion(round(self.x / CELLSIZE), round(self.y / CELLSIZE), rad)
+	def opt_ai_calc(self):
+		pass
 
 class Player(Entity):
 	def tickmove(self):
@@ -174,7 +178,7 @@ class Monster(Entity):
 		self.standing = False
 		self.color = (0, 150, 0)
 		self.direction = None
-	def tickmove(self):
+	def opt_ai_calc(self):
 		if self.standing and random.random() < 0.06: self.vy = -3.1
 		if self.direction:
 			self.vx += self.direction
@@ -196,6 +200,8 @@ class ExplodingMonster(Monster):
 		self.direction = None
 	def despawn(self):
 		self.createExplosion(3)
+		for i in range(random.choice([0, 1, 2, 3])):
+			things.append(ScoreItem(self.x + random.randint(-10, 10), self.y + random.randint(-10, 10)))
 
 class Spawner(Entity):
 	def __init__(self, x, y):
@@ -208,7 +214,7 @@ class Spawner(Entity):
 		self.direction = None
 	def tickmove(self):
 		if random.random() < 0.1: things.append(Monster(self.x, self.y))
-		if random.random() < 0.001: things.append(ExplodingMonster(self.x, self.y))
+		if random.random() < 0.005: things.append(ExplodingMonster(self.x, self.y))
 
 class Item(Entity):
 	def __init__(self, x, y):
@@ -225,8 +231,19 @@ class Item(Entity):
 		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(playerx, playery, 10, 10)):
 			self.die()
 			gainitem(self.img)
-	def tickmove(self):
-		if self.vy < 1: self.vy = 1
+	def opt_ai_calc(self):
+		if self.vy >= 0.5: self.vy = 0.5
+
+class ScoreItem(Item):
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
+		self.vx = 0
+		self.vy = 10
+		self.standing = False
+		self.img = "score"
+		self.direction = None
+		self.img_surface = pygame.transform.scale(pygame.image.load(self.img + ".png"), (10, 10))
 
 class Particle(Entity):
 	def __init__(self, x, y):
@@ -256,7 +273,8 @@ def gainitem(item):
 player = Player(100, 0)
 things = []
 items = {
-	"danger": 0
+	"danger": 0,
+	"score": 0
 }
 
 while True:
@@ -279,6 +297,9 @@ while True:
 				if items["danger"] >= 5:
 					items["danger"] -= 5
 					things.append(Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE)))
+			if keys[pygame.K_q]:
+				for t in things:
+					if isinstance(t, Item)
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
@@ -316,7 +337,7 @@ while True:
 	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
 	w = FONT.render(f"{str(items['danger'])} danger items collected", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
-	w = FONT.render(f"{str(len(things))} entities", True, BLACK)
+	w = FONT.render(f"{str(len(things))} entities; Score: {str(items['score'])}", True, BLACK)
 	screen.blit(w, (0, BOARDSIZE[1]))
 	pygame.display.flip()
 	c.tick(60)
