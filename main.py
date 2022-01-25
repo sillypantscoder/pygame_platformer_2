@@ -121,11 +121,11 @@ class Entity:
 				else:
 					if platform.left - thisEntity.right > -5:
 						# Entity is bumping into left side of platform!
-						self.vx = -1
+						self.vx = -1.05
 						pygame.draw.line(totalScreen, (0, 255, 0), platform.topleft, platform.bottomleft, 5)
 					elif thisEntity.left - platform.right > -5:
 						# Entity is bumping into right side of platform!
-						self.vx = 1
+						self.vx = 1.05
 						pygame.draw.line(totalScreen, (0, 255, 0), platform.topright, platform.bottomright, 5)
 					elif platform.bottom - thisEntity.top > -10:
 						# Entity is whacking into the top of a platform!
@@ -298,7 +298,7 @@ while True:
 					things.append(Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE)))
 			if keys[pygame.K_q]:
 				for t in things:
-					if isinstance(t, (Item, Monster)) and not isinstance(t, ScoreItem):
+					if isinstance(t, (Item, Monster, Spawner)) and not isinstance(t, ScoreItem):
 						t.die()
 	# DRAWING ------------
 	screen.fill(GRAY)
