@@ -1,4 +1,5 @@
 import random
+from tkinter.tix import CELL
 import pygame
 import json
 import math
@@ -14,7 +15,8 @@ LIGHTRED = (255, 180, 180)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BROWN = (28, 2, 0)
-WORLD = [[random.choices([0, 1, 2, 3], weights=[10, 25, 2, 1], k=1)[0] for y in range(BOARDSIZE[1])] for x in range(BOARDSIZE[0])]
+TAN = (255, 241, 171)
+WORLD = [[random.choices([0, 1, 2, 3, 4], weights=[10, 25, 2, 1, 1], k=1)[0] for y in range(BOARDSIZE[1])] for x in range(BOARDSIZE[0])]
 CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
@@ -74,6 +76,10 @@ def explosion(cx, cy, rad):
 				WORLD[x][y] = 0
 			elif WORLD[x][y] == 1:
 				WORLD[x][y] = 0
+			elif WORLD[x][y] == 4:
+				WORLD[x][y] = 0
+				s = MovingBlock(x * CELLSIZE, y * CELLSIZE)
+				things.append(s)
 	for l in more:
 		explosion(*l, 2)
 	if random.random() < 0.3: things.append(Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE)))
@@ -97,7 +103,7 @@ class Entity:
 			for y in range(len(WORLD[x])):
 				cell = WORLD[x][y]
 				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
-				if cell == 1 or cell == 3:
+				if cell == 1 or cell == 3 or cell == 4:
 					if pygame.Rect(self.x, self.y + 1, 10, 10).colliderect(cellrect):
 						touching_platforms.append(cellrect)
 				if cell == 2:
@@ -150,8 +156,10 @@ class Entity:
 			self.despawn()
 			things.remove(self)
 		else: print("Entity " + str(self) + " was removed twice!")
+	def getBlock(self):
+		return (round(self.x / CELLSIZE), round(self.y / CELLSIZE))
 	def createExplosion(self, rad):
-		explosion(round(self.x / CELLSIZE), round(self.y / CELLSIZE), rad)
+		explosion(*self.getBlock(), rad)
 	def opt_ai_calc(self):
 		pass
 
@@ -264,6 +272,15 @@ class Particle(Entity):
 		self.vx = 0
 		self.ticks -= 1
 
+class MovingBlock(Entity):
+	def tickmove(self):
+		if self.standing:
+			self.y -= CELLSIZE / 2
+			self.die()
+	def despawn(self):
+		b = self.getBlock()
+		WORLD[b[0]][b[1]] = 4
+
 def gainitem(item):
 	if not item in items:
 		items[item] = 0
@@ -314,6 +331,8 @@ while True:
 					pygame.draw.rect(totalScreen, RED, cellrect)
 				if cell == 3:
 					pygame.draw.rect(totalScreen, BROWN, cellrect)
+				if cell == 4:
+					pygame.draw.rect(totalScreen, TAN, cellrect)
 	# Spawning
 	if random.random() < 0.001:
 		things.append(Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE)))
