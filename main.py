@@ -131,7 +131,14 @@ class Entity:
 					pygame.draw.line(totalScreen, (0, 255, 0), platform.topleft, platform.topright, 5)
 					if WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)] == 4:
 						# Standing on sand!
-						if WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE) + 1] == 0:
+						fall = False
+						try:
+							if WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE) + 1] == 0:
+								fall = True
+						except:
+							fall = True
+							print("Entity " + str(self) + " caused sand to fall out bottom of world")
+						if fall:
 							WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)] = 0
 							s = MovingBlock(*platform.topleft)
 							s.vy = 3
@@ -290,10 +297,13 @@ class MovingBlock(Entity):
 		if self.standing:
 			self.y -= CELLSIZE / 2
 			self.die()
-		self.vx *= 2
+		self.vx *= 1.8
 	def despawn(self):
 		b = self.getBlock()
-		WORLD[b[0]][b[1]] = 4
+		try:
+			WORLD[b[0]][b[1]] = 4
+		except:
+			print("MovingBlock " + str(self) + "attempted to re-place block at: " + str(b[0]) + ", " + str(b[1]))
 
 def gainitem(item):
 	if not item in items:
