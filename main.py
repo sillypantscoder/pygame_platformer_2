@@ -1,8 +1,10 @@
 import random
-from tkinter.tix import CELL
 import pygame
 import json
 import math
+
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 pygame.init()
 pygame.font.init()
@@ -70,7 +72,7 @@ def explosion(cx, cy, rad):
 	more = []
 	for x in range(cx - rad, cx + rad + 1):
 		for y in range(cy - rad, cy + rad + 1):
-			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue;
+			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue
 			if WORLD[x][y] == 2:
 				more.append([x, y])
 				WORLD[x][y] = 0
@@ -79,6 +81,9 @@ def explosion(cx, cy, rad):
 			elif WORLD[x][y] == 4:
 				WORLD[x][y] = 0
 				s = MovingBlock(x * CELLSIZE, y * CELLSIZE)
+				dist = math.sqrt(math.pow(cx - s.x, 2) + math.pow(cy - s.y, 2))
+				s.vx = -((cx - s.x) / dist)
+				s.vy = -((cy - s.y) / dist)
 				things.append(s)
 	for l in more:
 		explosion(*l, 2)
@@ -124,6 +129,13 @@ class Entity:
 					self.y = platform.top - 10
 					self.standing = True
 					pygame.draw.line(totalScreen, (0, 255, 0), platform.topleft, platform.topright, 5)
+					if WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)] == 4:
+						# Standing on sand!
+						if WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE) + 1] == 0:
+							WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)] = 0
+							s = MovingBlock(*platform.topleft)
+							s.vy = 3
+							things.append(s)
 				else:
 					if platform.left - thisEntity.right > -5:
 						# Entity is bumping into left side of platform!
@@ -145,6 +157,7 @@ class Entity:
 		if self.vx > 20 or self.vy > 20 or self.vx < -20 or self.vy < -20:
 			self.vx = 0
 			self.vy = 0
+			print("Entity " + str(self) + " went too fast!")
 		self.tickmove()
 		if len(things) < 20: self.opt_ai_calc()
 	def tickmove(self):
@@ -277,6 +290,7 @@ class MovingBlock(Entity):
 		if self.standing:
 			self.y -= CELLSIZE / 2
 			self.die()
+		self.vx *= 2
 	def despawn(self):
 		b = self.getBlock()
 		WORLD[b[0]][b[1]] = 4
