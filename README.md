@@ -10,6 +10,8 @@ In this version:
 
 **Read this first before playing the game:**
 
+To play the game, run the program. Then click on "Go" and click on "default.py". You will appear in a randomly generated world.
+
 1. You are the red square. You can walk around with the arrow keys, and up to jump.
 2. Walking into red TNT blocks will explode them. A big danger icon will appear whenever there is an explosion.
 3. Occasionally, explosions will drop danger items ![](danger.png). These are small items that fall to the ground. You can pick them up by walking on them
