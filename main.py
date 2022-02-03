@@ -91,13 +91,13 @@ def explosion(cx, cy, rad):
 	if random.random() < 0.3: things.append(Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE)))
 
 class Entity:
+	color = (0, 0, 0)
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
 		self.vx = 0
 		self.vy = 0
 		self.standing = False
-		self.color = (255, 0, 0)
 		self.ticking = True
 	def draw(self, playerx, playery):
 		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 250 - playery)))
@@ -186,9 +186,10 @@ class Entity:
 	def opt_ai_calc(self):
 		pass
 	def drop(self, item):
-		things.append(item(self.x + random.randint(-10, 10), self.y + random.randint(0, 10)))
+		things.append(item(self.x + random.randint(-10, 10), self.y + random.randint(10, 25)))
 
 class Player(Entity):
+	color = (255, 0, 0)
 	def tickmove(self):
 		keys = pygame.key.get_pressed()
 		if keys[pygame.K_LEFT]:
@@ -202,13 +203,13 @@ class Player(Entity):
 		exit()
 
 class Monster(Entity):
+	color = (0, 150, 0)
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
 		self.vx = 0
 		self.vy = 0
 		self.standing = False
-		self.color = (0, 150, 0)
 		self.ticking = True
 		self.direction = None
 	def opt_ai_calc(self):
@@ -223,13 +224,13 @@ class Monster(Entity):
 			self.drop(Item)
 
 class ExplodingMonster(Monster):
+	color = (0, 255, 0)
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
 		self.vx = 0
 		self.vy = 0
 		self.standing = False
-		self.color = (0, 255, 0)
 		self.ticking = True
 		self.direction = None
 	def despawn(self):
@@ -238,13 +239,13 @@ class ExplodingMonster(Monster):
 			self.drop(ScoreItem)
 
 class Spawner(Entity):
+	color = (0, 0, 150)
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
 		self.vx = 0
 		self.vy = 0
 		self.standing = False
-		self.color = (0, 0, 150)
 		self.ticking = True
 		self.direction = None
 	def tickmove(self):
@@ -304,6 +305,7 @@ class Particle(Entity):
 		self.ticks -= 1
 
 class MovingBlock(Entity):
+	color = TAN
 	def tickmove(self):
 		if self.standing:
 			self.y -= CELLSIZE / 2

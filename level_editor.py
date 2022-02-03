@@ -17,12 +17,13 @@ LIGHTRED = (255, 180, 180)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BROWN = (28, 2, 0)
+TAN = (255, 241, 171)
 WORLD = [[random.choice([0, 1]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
 CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
 
-screen = pygame.display.set_mode([500, 500])
+screen = pygame.display.set_mode([500, 500 + CELLSIZE])
 
 f = open("world.json", "r")
 WORLD = json.loads(f.read())
@@ -32,6 +33,15 @@ f.close()
 
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
+pallete = [
+	{"color": WHITE, "id": 0, "rect": pygame.Rect(0, 0, CELLSIZE, CELLSIZE)},
+	{"color": BLACK, "id": 1, "rect": pygame.Rect(CELLSIZE, 0, CELLSIZE, CELLSIZE)},
+	{"color": RED, "id": 2, "rect": pygame.Rect(CELLSIZE*2, 0, CELLSIZE, CELLSIZE)},
+	{"color": BROWN, "id": 3, "rect": pygame.Rect(CELLSIZE*3, 0, CELLSIZE, CELLSIZE)},
+	{"color": TAN, "id": 4, "rect": pygame.Rect(CELLSIZE*4, 0, CELLSIZE, CELLSIZE)}
+]
+selectedbrush = 0
+
 running = True
 while running:
 	for event in pygame.event.get():
@@ -39,7 +49,13 @@ while running:
 			running = False
 			# User clicked close button
 		if event.type == pygame.MOUSEBUTTONUP:
-			WORLD[selectedx][selectedy] = (WORLD[selectedx][selectedy] + 1) % 4
+			world = True
+			for o in pallete:
+				if o["rect"].collidepoint(pygame.mouse.get_pos()):
+					world = False
+					selectedbrush = o["id"]
+			if world:
+				WORLD[selectedx][selectedy] = selectedbrush
 	keys = pygame.key.get_pressed()
 	if keys[pygame.K_LEFT]:
 		playerpos[0] -= 2
@@ -69,10 +85,15 @@ while running:
 				pygame.draw.rect(totalScreen, RED, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
 			if cell == 3:
 				pygame.draw.rect(totalScreen, BROWN, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
+			if cell == 4:
+				pygame.draw.rect(totalScreen, TAN, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
 			if pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE).collidepoint(pos):
 				selectedx = x
 				selectedy = y
 				pygame.draw.rect(totalScreen, RED, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE), 10)
+	# Pallete
+	for o in pallete:
+		pygame.draw.rect(screen, o["color"], o["rect"])
 	# FLIP -----------------
 	screen.blit(totalScreen, (250 - playerpos[0], 250 - playerpos[1]))
 	pygame.display.flip()
