@@ -1,3 +1,4 @@
+from os import listdir, system
 import random
 import pygame
 import json
@@ -54,14 +55,32 @@ while running:
 	c.tick(60)
 	pygame.display.flip()
 
+# GENERATOR SELECTION
+
+items = listdir("generators")
+running = wr
+while running:
+	screen.fill(WHITE)
+	for i in range(len(items)):
+		w = FONT.render(items[i], True, BLACK)
+		screen.blit(w, (0, i * 40))
+	for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame.quit(); exit()
+				# User clicked close button
+			if event.type == pygame.MOUSEBUTTONUP:
+				pos = pygame.mouse.get_pos()
+				y = math.floor(pos[1] / 40)
+				wr = items[y]
+				running = False
+	c.tick(60)
+	pygame.display.flip()
+
 if wr:
-	f = open("world.json", "w")
-	f.write(json.dumps(WORLD).replace("], [", "],\n ["))
-	f.close()
-else:
-	f = open("world.json", "r")
-	WORLD = json.loads(f.read())
-	f.close()
+	system("python3 generators/" + wr)
+f = open("world.json", "r")
+WORLD = json.loads(f.read())
+f.close()
 
 # PLAYING -------------------------------------------------
 
@@ -316,7 +335,7 @@ class MovingBlock(Entity):
 		try:
 			WORLD[b[0]][b[1]] = 4
 		except:
-			print("MovingBlock " + str(self) + "attempted to re-place block at: " + str(b[0]) + ", " + str(b[1]))
+			print("MovingBlock " + str(self) + " attempted to re-place block at: " + str(b[0]) + ", " + str(b[1]))
 
 def gainitem(item):
 	if not item in items:
