@@ -19,3 +19,10 @@ In this version:
 7. Normal monsters will drop lots of danger items when they despawn, which shouldn't take very long. Exploding monsters will explode when they despawn, producing a big danger icon and possibly a danger item.
 8. If you have 10 or more danger items, you can press space at any time to cause an explosions at your space. The explosion is just like any other explosion and will create a big danger icon and possibly another danger item.
 9. (New!) If you have 15 or more danger items, you can click anywhere on the screen to immediately spawn a spawner there. This is a good way to get danger items, but I'm not sure if it's actually worth it yet.
+
+
+New: The super non-glitchy update
+
+- Now doesn't tick entities that are off the screen. This can be weird (e.g. falling items pause in midair), but it is MUCH less glitchy.
+
+Maybe I am going to have an option in the future for whether to tick offscreen entities?

@@ -81,10 +81,11 @@ def explosion(cx, cy, rad):
 			elif WORLD[x][y] == 4:
 				WORLD[x][y] = 0
 				s = MovingBlock(x * CELLSIZE, y * CELLSIZE)
-				dist = math.sqrt(math.pow(cx - s.x, 2) + math.pow(cy - s.y, 2))
-				s.vx = -((cx - s.x) / dist)
-				s.vy = -((cy - s.y) / dist)
 				things.append(s)
+	for t in things:
+		if pygame.Rect(cx - rad, cy - rad, rad * 2, rad * 2).collidepoint((t.x / CELLSIZE, t.y / CELLSIZE)):
+			t.vx += (random.random() * 4) - 2
+			t.vy += (random.random() * 4) - 2
 	for l in more:
 		explosion(*l, 2)
 	if random.random() < 0.3: things.append(Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE)))
@@ -97,9 +98,11 @@ class Entity:
 		self.vy = 0
 		self.standing = False
 		self.color = (255, 0, 0)
+		self.ticking = True
 	def draw(self, playerx, playery):
 		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 250 - playery)))
 	def tick(self):
+		if not self.ticking: return
 		self.x += self.vx
 		self.y += self.vy
 		touching_platforms = []
@@ -182,6 +185,8 @@ class Entity:
 		explosion(*self.getBlock(), rad)
 	def opt_ai_calc(self):
 		pass
+	def drop(self, item):
+		things.append(item(self.x + random.randint(-10, 10), self.y + random.randint(0, 10)))
 
 class Player(Entity):
 	def tickmove(self):
@@ -204,6 +209,7 @@ class Monster(Entity):
 		self.vy = 0
 		self.standing = False
 		self.color = (0, 150, 0)
+		self.ticking = True
 		self.direction = None
 	def opt_ai_calc(self):
 		if self.standing and random.random() < 0.06: self.vy = -3.1
@@ -214,7 +220,7 @@ class Monster(Entity):
 			self.direction = random.choice([1, -1])
 	def despawn(self):
 		for i in range(random.choice([0, 1, 2, 3])):
-			things.append(Item(self.x + random.randint(-10, 10), self.y + random.randint(-10, 10)))
+			self.drop(Item)
 
 class ExplodingMonster(Monster):
 	def __init__(self, x, y):
@@ -224,11 +230,12 @@ class ExplodingMonster(Monster):
 		self.vy = 0
 		self.standing = False
 		self.color = (0, 255, 0)
+		self.ticking = True
 		self.direction = None
 	def despawn(self):
 		self.createExplosion(3)
 		for i in range(random.choice([0, 1, 2, 3])):
-			things.append(ScoreItem(self.x + random.randint(-10, 10), self.y + random.randint(-10, 10)))
+			self.drop(ScoreItem)
 
 class Spawner(Entity):
 	def __init__(self, x, y):
@@ -238,6 +245,7 @@ class Spawner(Entity):
 		self.vy = 0
 		self.standing = False
 		self.color = (0, 0, 150)
+		self.ticking = True
 		self.direction = None
 	def tickmove(self):
 		if random.random() < 0.1: things.append(Monster(self.x, self.y))
@@ -251,6 +259,7 @@ class Item(Entity):
 		self.vy = 10
 		self.standing = False
 		self.img = "danger"
+		self.ticking = True
 		self.direction = None
 		self.img_surface = pygame.transform.scale(pygame.image.load(self.img + ".png"), (10, 10))
 	def draw(self, playerx, playery):
@@ -270,6 +279,7 @@ class ScoreItem(Item):
 		self.standing = False
 		self.img = "score"
 		self.direction = None
+		self.ticking = True
 		self.img_surface = pygame.transform.scale(pygame.image.load(self.img + ".png"), (10, 10))
 
 class Particle(Entity):
@@ -282,6 +292,7 @@ class Particle(Entity):
 		self.img = "danger"
 		self.ticks = 100
 		self.direction = None
+		self.ticking = True
 		self.img_surface = pygame.image.load(self.img + ".png")
 	def draw(self, playerx, playery):
 		screen.blit(self.img_surface, (self.x + (250 - playerx) + (self.img_surface.get_width() * -0.5), self.y + (250 - playery) + (self.img_surface.get_width() * -0.5)))
@@ -316,6 +327,8 @@ items = {
 	"danger": 0,
 	"score": 0
 }
+tickingrefresh = 10
+tickingcount = 0
 
 while True:
 	for event in pygame.event.get():
@@ -357,6 +370,17 @@ while True:
 					pygame.draw.rect(totalScreen, BROWN, cellrect)
 				if cell == 4:
 					pygame.draw.rect(totalScreen, TAN, cellrect)
+	# Ticking
+	if tickingrefresh > 0:
+		tickingrefresh -= 1
+	else:
+		tickingcount = 0
+		tickingrefresh = 10
+		for t in things:
+			if (abs(t.x - player.x) < 250) and (abs(t.y - player.y) < 250):
+				t.ticking = True
+				tickingcount += 1
+			else: t.ticking = False
 	# Spawning
 	if random.random() < 0.001:
 		things.append(Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE)))
@@ -378,9 +402,9 @@ while True:
 			things.remove(t)
 	# FLIP -----------------
 	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
-	w = FONT.render(f"{str(items['danger'])} danger items collected", True, BLACK)
+	w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
-	w = FONT.render(f"{str(len(things))} entities; Score: {str(items['score'])}", True, BLACK)
+	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking", True, BLACK)
 	screen.blit(w, (0, BOARDSIZE[1]))
 	pygame.display.flip()
 	c.tick(60)
