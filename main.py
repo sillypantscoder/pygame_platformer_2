@@ -383,9 +383,9 @@ while True:
 			# User clicked close button
 		if event.type == pygame.MOUSEBUTTONUP:
 			pos = pygame.mouse.get_pos()
-			#if items["danger"] >= 15:
-				#items["danger"] -= 15
-			things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250)))
+			if items["danger"] >= 15:
+				items["danger"] -= 15
+				things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250)))
 		if event.type == pygame.KEYDOWN:
 			keys = pygame.key.get_pressed()
 			if keys[pygame.K_SPACE]:
