@@ -188,7 +188,7 @@ class Entity:
 			self.vy = 0
 			print("Entity " + str(self) + " went too fast!")
 		self.tickmove()
-		if len(things) < 20: self.opt_ai_calc()
+		if len(things) < 20 or pygame.key.get_pressed()[pygame.K_a]: self.opt_ai_calc()
 	def tickmove(self):
 		pass
 	def despawn(self):
@@ -229,7 +229,7 @@ class Monster(Entity):
 		self.vx = 0
 		self.vy = 0
 		self.standing = False
-		self.ticking = True
+		self.ticking = False
 		self.direction = None
 	def opt_ai_calc(self):
 		if self.standing and random.random() < 0.06: self.vy = -3.1
@@ -250,7 +250,7 @@ class ExplodingMonster(Monster):
 		self.vx = 0
 		self.vy = 0
 		self.standing = False
-		self.ticking = True
+		self.ticking = False
 		self.direction = None
 	def despawn(self):
 		self.createExplosion(3)
@@ -265,7 +265,7 @@ class Spawner(Entity):
 		self.vx = 0
 		self.vy = 0
 		self.standing = False
-		self.ticking = True
+		self.ticking = False
 		self.direction = None
 	def tickmove(self):
 		if random.random() < 0.1: things.append(Monster(self.x, self.y))
@@ -279,7 +279,7 @@ class Item(Entity):
 		self.vy = 10
 		self.standing = False
 		self.img = "danger"
-		self.ticking = True
+		self.ticking = False
 		self.direction = None
 		self.img_surface = pygame.transform.scale(pygame.image.load(self.img + ".png"), (10, 10))
 	def draw(self, playerx, playery):
@@ -287,6 +287,10 @@ class Item(Entity):
 		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(playerx, playery, 10, 10)):
 			self.die()
 			gainitem(self.img)
+		for t in things:
+			if isinstance(t, Allay) and pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(t.x, t.y, 10, 10)):
+				self.die()
+				gainitem(self.img)
 	def opt_ai_calc(self):
 		if self.vy >= 0.5: self.vy = 0.5
 
@@ -299,7 +303,7 @@ class ScoreItem(Item):
 		self.standing = False
 		self.img = "score"
 		self.direction = None
-		self.ticking = True
+		self.ticking = False
 		self.img_surface = pygame.transform.scale(pygame.image.load(self.img + ".png"), (10, 10))
 
 class Particle(Entity):
@@ -312,7 +316,7 @@ class Particle(Entity):
 		self.img = "danger"
 		self.ticks = 100
 		self.direction = None
-		self.ticking = True
+		self.ticking = False
 		self.img_surface = pygame.image.load(self.img + ".png")
 	def draw(self, playerx, playery):
 		screen.blit(self.img_surface, (self.x + (250 - playerx) + (self.img_surface.get_width() * -0.5), self.y + (250 - playery) + (self.img_surface.get_width() * -0.5)))
@@ -337,6 +341,27 @@ class MovingBlock(Entity):
 		except:
 			print("MovingBlock " + str(self) + " attempted to re-place block at: " + str(b[0]) + ", " + str(b[1]))
 
+class Allay(Entity):
+	color = (100, 100, 255)
+	def opt_ai_calc(self):
+		# Find a target.
+		target = None
+		targetdist = 1000
+		for t in things:
+			dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
+			# Find the closest Item, but if a ScoreItem is available, go for that instead.
+			# 30% chance of targeting a different Item.
+			if (dist < targetdist or random.random()<0.3 or isinstance(t, ScoreItem)) and isinstance(t, Item):
+				target = t
+				targetdist = dist
+		if not target: return
+		# Go left or right depending on where the target is.
+		if target.x < self.x:
+			self.vx -= 1
+		else: self.vx += 1
+		# If the target is more than half a block above me, jump.
+		if target.y - self.y < -(CELLSIZE / 2) and self.standing: self.vy -= 3.1
+
 def gainitem(item):
 	if not item in items:
 		items[item] = 0
@@ -358,9 +383,9 @@ while True:
 			# User clicked close button
 		if event.type == pygame.MOUSEBUTTONUP:
 			pos = pygame.mouse.get_pos()
-			if items["danger"] >= 15:
-					items["danger"] -= 15
-					things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250)))
+			#if items["danger"] >= 15:
+				#items["danger"] -= 15
+			things.append(Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250)))
 		if event.type == pygame.KEYDOWN:
 			keys = pygame.key.get_pressed()
 			if keys[pygame.K_SPACE]:
@@ -375,6 +400,8 @@ while True:
 				for t in things:
 					if isinstance(t, (Item, Monster, Spawner)) and not isinstance(t, ScoreItem):
 						t.die()
+			if keys[pygame.K_w]:
+				things.append(Allay(player.x, player.y))
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
@@ -397,8 +424,9 @@ while True:
 	else:
 		tickingcount = 0
 		tickingrefresh = 10
+		keys = pygame.key.get_pressed()
 		for t in things:
-			if (abs(t.x - player.x) < 250) and (abs(t.y - player.y) < 250):
+			if (abs(t.x - player.x) < 250) and (abs(t.y - player.y) < 250) or keys[pygame.K_a]:
 				t.ticking = True
 				tickingcount += 1
 			else: t.ticking = False
@@ -420,7 +448,7 @@ while True:
 			t.die()
 		# Dying
 		elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
-			things.remove(t)
+			t.die()
 	# FLIP -----------------
 	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
 	w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
