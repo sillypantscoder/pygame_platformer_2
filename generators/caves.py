@@ -31,16 +31,15 @@ def makeNoodleCave(startX, startY, targetX, targetY):
 	x = startX
 	y = startY
 	dist = 30
-	incX = (startX - targetX) / dist
-	incY = (startY - targetY) / dist
+	incX = (targetX - startX) / dist
+	incY = (targetY - startY) / dist
 	for i in range(dist):
 		x += incX
 		y += incY
 		try:
-			#drawPoint(round(x), round(y), 3)
-			WORLD[round(x)][round(y)] = 2
-		except:
-			print("[ Worldgen: Error when placing block ]", end="")
+			drawPoint(round(x), round(y), 1)
+		except Exception as e:
+			print(f"[ Worldgen: Error when placing block: {e} where x is {x} and y is {y} ]")
 
 makeNoodleCave(*getRandomPositionOnSide(0), *getRandomEdge())
 for cave in range(3):

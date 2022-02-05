@@ -17,7 +17,7 @@ for x in range(BOARDSIZE[0]):
     if height < logicalHeight: height += random.choice([0, 0, 1])
     else: height -= random.choice([0, 0, 1])
     for i in range(height):
-        WORLD[x][(BOARDSIZE[1] - 1) - i] = 1
+        WORLD[x][(BOARDSIZE[1] - 1) - i] = random.choices([1, 2], weights=[10, 1], k=1)[0]
     # Bedrock Height
     bedrockHeight += random.choice([-1, 0, 1])
     if bedrockHeight < logicalBedrockHeight: bedrockHeight += random.choice([0, 0, 1])

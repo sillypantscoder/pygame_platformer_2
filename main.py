@@ -96,15 +96,18 @@ f.close()
 # PLAYING -------------------------------------------------
 
 def errormsg(entity, msg):
-	print(f"[ {repr(entity)} {msg} ]", end="")
+	print(f"[ {repr(entity)} {msg} ]")
 
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
 def explosion(cx, cy, rad):
+	WORLD[cx][cy] = 0
+	print(f"explosion at ({cx},{cy}) rad={rad}")
 	Particle((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
 	more = []
 	for x in range(cx - rad, cx + rad + 1):
 		for y in range(cy - rad, cy + rad + 1):
+			if ((x - cx) ** 2) + ((y - cy) ** 2) > (rad ** 2): continue
 			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue
 			if WORLD[x][y] == 2:
 				more.append([x, y])
@@ -114,13 +117,27 @@ def explosion(cx, cy, rad):
 			elif WORLD[x][y] == 4:
 				WORLD[x][y] = 0
 				s = MovingBlock(x * CELLSIZE, y * CELLSIZE)
-	for t in things:
-		if pygame.Rect(cx - rad, cy - rad, rad * 2, rad * 2).collidepoint((t.x / CELLSIZE, t.y / CELLSIZE)):
-			t.vx += (random.random() * 4) - 2
-			t.vy += (random.random() * 4) - 2
+	for t in [player, *things]:
+		print(f"checking {repr(t)} at ({t.x},{t.y})")
+		dx = t.x - ((cx + 0.5) * CELLSIZE)
+		dy = t.y - ((cy + 0.5) * CELLSIZE)
+		distanceFromExplosion = math.sqrt(dx ** 2 + dy ** 2)
+		if distanceFromExplosion < rad * CELLSIZE:
+			dirx = dx / distanceFromExplosion if distanceFromExplosion > 0 else 0
+			diry = dy / distanceFromExplosion if distanceFromExplosion > 0 else 0
+			# if it's on the left of the explosion, it should fly out to the left.
+			# if it's close to the explosion, it should fly out faster.
+			# if it's far from the explosion, it should be less affected.
+			# if t.x < cx (it's on the left of the explosion), then dx is negative
+			dvx = dirx * (rad - (distanceFromExplosion/CELLSIZE)) * 10
+			dvy = diry * (rad - (distanceFromExplosion/CELLSIZE)) * 10
+			t.vx += dvx
+			t.vy += dvy
+			print(f"{repr(t)} close to explosion: rad={rad} (cx,cy)=({cx},{cy}) t=({t.x},{t.y}) dist = {distanceFromExplosion} dv=({dvx},{dvy})")
 	for l in more:
 		explosion(*l, 2)
-	if random.random() < 0.3: Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
+	if random.random() < 0.3:
+		Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
 
 class Entity:
 	color = (0, 0, 0)
