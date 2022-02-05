@@ -95,6 +95,9 @@ f.close()
 
 # PLAYING -------------------------------------------------
 
+def errormsg(entity, msg):
+	print(f"[ {repr(entity)} {msg} ]", end="")
+
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
 def explosion(cx, cy, rad):
@@ -173,7 +176,7 @@ class Entity:
 								fall = True
 						except:
 							fall = True
-							print("Entity " + str(self) + " caused sand to fall out bottom of world")
+							errormsg(self, "jumped on sand at bottom of world")
 						if fall:
 							WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)] = 0
 							s = MovingBlock(*platform.topleft)
@@ -199,7 +202,7 @@ class Entity:
 		if self.vx > 20 or self.vy > 20 or self.vx < -20 or self.vy < -20:
 			self.vx = 0
 			self.vy = 0
-			print("Entity " + str(self) + " went too fast!")
+			errormsg(self, "went too fast")
 		self.tickmove()
 		if len(things) < 20 or pygame.key.get_pressed()[pygame.K_a] or alwaystick: self.opt_ai_calc()
 	def tickmove(self):
@@ -210,7 +213,7 @@ class Entity:
 		if self in things:
 			self.despawn()
 			things.remove(self)
-		else: print("Entity " + str(self) + " was removed twice!")
+		else: errormsg(self, "was removed twice")
 	def getBlock(self):
 		return (round(self.x / CELLSIZE), round(self.y / CELLSIZE))
 	def createExplosion(self, rad):
@@ -312,7 +315,7 @@ class MovingBlock(Entity):
 		try:
 			WORLD[b[0]][b[1]] = 4
 		except:
-			print("MovingBlock " + str(self) + " attempted to re-place block at: " + str(b[0]) + ", " + str(b[1]))
+			errormsg(self, "attempted to re-place block at: " + str(b[0]) + ", " + str(b[1]))
 
 class Allay(Entity):
 	color = (100, 100, 255)
