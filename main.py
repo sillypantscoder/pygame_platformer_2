@@ -29,6 +29,7 @@ screen = pygame.display.set_mode([500, 500])
 # WORLD SELECTION -----------------------------------------
 
 wr = True
+alwaystick = False
 
 running = True
 while running:
@@ -42,6 +43,14 @@ while running:
 	g = FONT.render("Go >", True, GREEN)
 	screen.blit(g, (0, wy))
 	gy = g.get_height() + wy
+	# Always ticking?
+	if alwaystick:
+		a = FONT.render("Always tick entities: Y", True, BLACK)
+	else:
+		a = FONT.render("Always tick entities: N", True, BLACK)
+	screen.blit(a, (0, wy + gy))
+	ay = a.get_height() + wy + gy
+	# Events
 	for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame.quit(); exit()
@@ -52,6 +61,8 @@ while running:
 					wr = not wr
 				elif pos[1] < gy:
 					running = False
+				elif pos[1] < ay:
+					alwaystick = not alwaystick
 	c.tick(60)
 	pygame.display.flip()
 
@@ -426,7 +437,7 @@ while True:
 		tickingrefresh = 10
 		keys = pygame.key.get_pressed()
 		for t in things:
-			if (abs(t.x - player.x) < 250) and (abs(t.y - player.y) < 250) or keys[pygame.K_a]:
+			if (abs(t.x - player.x) < 250) and (abs(t.y - player.y) < 250) or keys[pygame.K_a] or alwaystick:
 				t.ticking = True
 				tickingcount += 1
 			else: t.ticking = False
