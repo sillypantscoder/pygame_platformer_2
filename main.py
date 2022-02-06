@@ -1,4 +1,5 @@
 from os import listdir, system
+import sys
 import random
 import pygame
 import json
@@ -96,13 +97,17 @@ f.close()
 # PLAYING -------------------------------------------------
 
 def errormsg(entity, msg):
-	print(f"[ {repr(entity)} {msg} ]")
+	if "--show-errors" in sys.argv:
+		print(u"\u001b[31m" + f"[ {repr(entity)} {msg} ]" + u"\u001b[0m")
+def debugmsg(msg):
+	if "--show-debugs" in sys.argv:
+		print(u"\u001b[33m" + f"[ {msg} ]" + u"\u001b[0m")
 
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
 def explosion(cx, cy, rad):
 	WORLD[cx][cy] = 0
-	print(f"explosion at ({cx},{cy}) rad={rad}")
+	debugmsg(f"explosion at ({cx},{cy}) rad={rad}")
 	Particle((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
 	more = []
 	for x in range(cx - rad, cx + rad + 1):
@@ -118,7 +123,6 @@ def explosion(cx, cy, rad):
 				WORLD[x][y] = 0
 				s = MovingBlock(x * CELLSIZE, y * CELLSIZE)
 	for t in [player, *things]:
-		print(f"checking {repr(t)} at ({t.x},{t.y})")
 		dx = t.x - ((cx + 0.5) * CELLSIZE)
 		dy = t.y - ((cy + 0.5) * CELLSIZE)
 		distanceFromExplosion = math.sqrt(dx ** 2 + dy ** 2)
@@ -133,7 +137,6 @@ def explosion(cx, cy, rad):
 			dvy = diry * (rad - (distanceFromExplosion/CELLSIZE)) * 10
 			t.vx += dvx
 			t.vy += dvy
-			print(f"{repr(t)} close to explosion: rad={rad} (cx,cy)=({cx},{cy}) t=({t.x},{t.y}) dist = {distanceFromExplosion} dv=({dvx},{dvy})")
 	for l in more:
 		explosion(*l, 2)
 	if random.random() < 0.3:
