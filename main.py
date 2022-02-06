@@ -25,7 +25,7 @@ CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
 
-screen = pygame.display.set_mode([500, 500])
+screen = pygame.display.set_mode([500, 560])
 
 # WORLD SELECTION -----------------------------------------
 
@@ -106,6 +106,7 @@ def debugmsg(msg):
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
 def explosion(cx, cy, rad):
+	if cx < 0 or cy < 0 or cx >= BOARDSIZE[0] or cy >= BOARDSIZE[1]: return
 	WORLD[cx][cy] = 0
 	debugmsg(f"explosion at ({cx},{cy}) rad={rad}")
 	Particle((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
@@ -446,6 +447,7 @@ while True:
 		elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 			t.die()
 	# FLIP -----------------
+	pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
 	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
 	w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
