@@ -359,6 +359,11 @@ class Allay(Entity):
 		# If the target is more than half a block above me, jump.
 		if target.y - self.y < -(CELLSIZE / 2) and self.standing: self.vy -= 3.1
 
+class AllaySpawner(Entity):
+	color = (0, 100, 150)
+	def tickmove(self):
+		if random.random() < 0.1: Allay(self.x, self.y)
+
 def gainitem(item):
 	if not item in items:
 		items[item] = 0
