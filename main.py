@@ -439,7 +439,7 @@ while True:
 	player.tick()
 	for t in things:
 		t.tick()
-	screen.blit(totalScreen, (250 - player.x, 250 - player.y))
+	screen.blit(totalScreen, (250 - player.x, 280 - player.y))
 	player.draw(player.x, player.y)
 	for t in things:
 		t.draw(player.x, player.y)
@@ -453,7 +453,7 @@ while True:
 			t.die()
 	# FLIP -----------------
 	pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
-	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 30))
+	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
 	w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
 	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking", True, BLACK)
