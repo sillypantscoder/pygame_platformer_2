@@ -127,15 +127,15 @@ def explosion(cx, cy, rad):
 		dx = t.x - ((cx + 0.5) * CELLSIZE)
 		dy = t.y - ((cy + 0.5) * CELLSIZE)
 		distanceFromExplosion = math.sqrt(dx ** 2 + dy ** 2)
-		if distanceFromExplosion < rad * CELLSIZE:
+		if distanceFromExplosion < (rad + 1) * CELLSIZE:
 			dirx = dx / distanceFromExplosion if distanceFromExplosion > 0 else 0
 			diry = dy / distanceFromExplosion if distanceFromExplosion > 0 else 0
 			# if it's on the left of the explosion, it should fly out to the left.
 			# if it's close to the explosion, it should fly out faster.
 			# if it's far from the explosion, it should be less affected.
 			# if t.x < cx (it's on the left of the explosion), then dx is negative
-			dvx = dirx * (rad - (distanceFromExplosion/CELLSIZE)) * 10
-			dvy = diry * (rad - (distanceFromExplosion/CELLSIZE)) * 10
+			dvx = dirx * (rad - (distanceFromExplosion/CELLSIZE)) * 8
+			dvy = diry * (rad - (distanceFromExplosion/CELLSIZE)) * 8
 			t.vx += dvx
 			t.vy += dvy
 	for l in more:
