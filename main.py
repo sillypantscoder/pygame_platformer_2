@@ -157,7 +157,7 @@ class Entity:
 		self.initmemory()
 		things.append(self)
 	def draw(self, playerx, playery):
-		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 250 - playery)))
+		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 280 - playery)))
 	def tick(self):
 		if not self.ticking: return
 		self.x += self.vx
@@ -294,7 +294,7 @@ class Item(Entity):
 		self.memory = {"img": "danger", "img_surface": None}
 	def draw(self, playerx, playery):
 		if (not self.memory["img_surface"]): self.memory["img_surface"] = pygame.transform.scale(pygame.image.load(self.memory["img"] + ".png"), (10, 10))
-		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx), self.y + (250 - playery)))
+		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx), self.y + (280 - playery)))
 		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(playerx, playery, 10, 10)):
 			self.die()
 			gainitem(self.memory["img"])
@@ -316,7 +316,7 @@ class Particle(Entity):
 		self.memory = {"img": "danger", "img_surface": None, "ticks": 100}
 	def draw(self, playerx, playery):
 		if (not self.memory["img_surface"]): self.memory["img_surface"] = pygame.image.load(self.memory["img"] + ".png")
-		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx) + (self.memory["img_surface"].get_width() * -0.5), self.y + (250 - playery) + (self.memory["img_surface"].get_width() * -0.5)))
+		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx) + (self.memory["img_surface"].get_width() * -0.5), self.y + (280 - playery) + (self.memory["img_surface"].get_width() * -0.5)))
 		if self.memory["ticks"] < 1:
 			self.die()
 	def tickmove(self):
@@ -448,7 +448,7 @@ while True:
 			t.die()
 	# FLIP -----------------
 	pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
-	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
+	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 30))
 	w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
 	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking", True, BLACK)
