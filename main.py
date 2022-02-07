@@ -403,7 +403,7 @@ while True:
 					if isinstance(t, (Item, Monster, Spawner)) and not isinstance(t, ScoreItem):
 						t.die()
 			if keys[pygame.K_w]:
-				Allay(player.x, player.y)
+				AllaySpawner(player.x, player.y)
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
