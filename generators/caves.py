@@ -21,22 +21,13 @@ def getRandomEdge():
 	side = random.randint(0, 3)
 	return getRandomPositionOnSide(side)
 
-def drawPoint(cx, cy, rad):
+def drawPoint(cx, cy, rad, block):
 	if cx < 0 or cy < 0 or cx >= BOARDSIZE[0] or cy >= BOARDSIZE[1]: return
-	WORLD[cx][cy] = "air"
 	for x in range(cx - rad, cx + rad + 1):
 		for y in range(cy - rad, cy + rad + 1):
 			if ((x - cx) ** 2) + ((y - cy) ** 2) > (rad ** 2): continue
 			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue
-			WORLD[x][y] = "air"
-def drawPointWater(cx, cy, rad):
-	if cx < 0 or cy < 0 or cx >= BOARDSIZE[0] or cy >= BOARDSIZE[1]: return
-	WORLD[cx][cy] = "air"
-	for x in range(cx - rad, cx + rad + 1):
-		for y in range(cy - rad, cy + rad + 1):
-			if ((x - cx) ** 2) + ((y - cy) ** 2) > (rad ** 2): continue
-			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue
-			WORLD[x][y] = "water"
+			WORLD[x][y] = block
 
 def makeNoodleCave(startX, startY, targetX, targetY):
 	x = startX
@@ -48,8 +39,9 @@ def makeNoodleCave(startX, startY, targetX, targetY):
 		x += incX
 		y += incY
 		try:
-			if random.random() < 0.01: drawPointWater(round(x), round(y), 2)
-			drawPoint(round(x), round(y), 1)
+			if random.random() < 0.01: drawPoint(round(x), round(y), 2, "water")
+			if random.random() < 0.01: drawPoint(round(x), round(y), 2, "tnt")
+			drawPoint(round(x), round(y), 1, "air")
 		except Exception as e:
 			print(f"[ Worldgen: Error when placing block: {e} where x is {x} and y is {y} ]")
 

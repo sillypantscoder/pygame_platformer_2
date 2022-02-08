@@ -4,6 +4,7 @@ import random
 import pygame
 import json
 import math
+import datetime
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -385,7 +386,8 @@ items = {
 }
 tickingrefresh = 10
 tickingcount = 0
-
+fpscalc = datetime.datetime.now()
+fps = "???"
 while True:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
@@ -473,11 +475,20 @@ while True:
 		elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 			t.die()
 	# FLIP -----------------
+	# Framerate
+	if tickingrefresh == 1:
+		newf = datetime.datetime.now()
+		sec = (newf - fpscalc).total_seconds()
+		fps = round(1/sec)
+	if tickingrefresh == 2:
+		fpscalc = datetime.datetime.now()
+	# Debug info
 	pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
 	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
 	w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
-	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking", True, BLACK)
+	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
 	screen.blit(w, (0, BOARDSIZE[1]))
+	# Flip
 	pygame.display.flip()
 	c.tick(60)
