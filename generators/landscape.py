@@ -8,8 +8,11 @@ WORLD = [[0 for x in range(BOARDSIZE[1])] for x in range(BOARDSIZE[0])]
 
 logicalHeight = math.floor(BOARDSIZE[1] / 2)
 height = math.floor(BOARDSIZE[1] / 2)
+
 logicalBedrockHeight = math.floor(BOARDSIZE[1] / 6)
 bedrockHeight = math.floor(BOARDSIZE[1] / 6)
+
+waterHeight = math.floor(BOARDSIZE[1] / 2.1)
 
 for x in range(BOARDSIZE[0]):
     # Height
@@ -24,6 +27,9 @@ for x in range(BOARDSIZE[0]):
     else: bedrockHeight -= random.choice([0, 0, 1])
     for i in range(bedrockHeight):
         WORLD[x][(BOARDSIZE[1] - 1) - i] = 3
+    # Water Height
+    for i in range(height, waterHeight):
+        WORLD[x][(BOARDSIZE[1] - 1) - i] = 5
 
 f = open("world.json", "w")
 f.write(json.dumps(WORLD).replace("], [", "],\n ["))

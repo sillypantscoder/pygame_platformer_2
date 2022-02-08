@@ -159,6 +159,7 @@ class Entity:
 	def draw(self, playerx, playery):
 		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 280 - playery)))
 	def tick(self):
+		self.standing = False
 		if not self.ticking: return
 		self.x += self.vx
 		self.y += self.vy
@@ -174,9 +175,13 @@ class Entity:
 				if cell == 2:
 					if pygame.Rect(self.x, self.y + 1, 10, 10).colliderect(cellrect):
 						explosion(x, y, 2)
+				if cell == 5 or cell == 6:
+					if pygame.Rect(self.x, self.y + 1, 10, 10).colliderect(cellrect):
+						if self.vy > 1.5: self.vy = 1.5
+						if self.vy < -1.5: self.vy = -1.5
+						self.standing = True
 		# Velocity computations
 		self.vx *= 0.5
-		self.standing = False
 		if len(touching_platforms) == 0:
 			self.vy += 0.05
 		else:
@@ -408,10 +413,14 @@ while True:
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
 	# Board
+	sets = []
 	for x in range(len(WORLD)):
 			for y in range(len(WORLD[x])):
 				cell = WORLD[x][y]
 				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
+				if cell == 0 and tickingrefresh == 0:
+					if WORLD[x][y - 1] in [5, 6] and y - 1 > 0:
+						sets.append({"pos": (x, y), "state": 6})
 				if cell == 1:
 					pygame.draw.rect(totalScreen, BLACK, cellrect)
 				if cell == 2:
@@ -420,6 +429,15 @@ while True:
 					pygame.draw.rect(totalScreen, BROWN, cellrect)
 				if cell == 4:
 					pygame.draw.rect(totalScreen, TAN, cellrect)
+				if cell == 5:
+					pygame.draw.rect(totalScreen, (50, 50, 255), cellrect)
+				if cell == 6:
+					pygame.draw.rect(totalScreen, (60, 60, 255), cellrect)
+					if ((not WORLD[x][y - 1] in [5, 6]) and tickingrefresh == 0) or y - 1 < 0:
+						sets.append({"pos": (x, y), "state": 0})
+	# Fluids and scheduled ticks
+	for s in sets:
+		WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
 	# Ticking
 	if tickingrefresh > 0:
 		tickingrefresh -= 1
