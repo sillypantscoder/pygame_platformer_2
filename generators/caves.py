@@ -5,7 +5,7 @@ import time
 
 BOARDSIZE = [30, 30]
 
-WORLD = [[1 for x in range(BOARDSIZE[1])] for x in range(BOARDSIZE[0])]
+WORLD = [["stone" for x in range(BOARDSIZE[1])] for x in range(BOARDSIZE[0])]
 
 def getRandomPositionOnSide(side):
 	if side == 0:
@@ -23,20 +23,20 @@ def getRandomEdge():
 
 def drawPoint(cx, cy, rad):
 	if cx < 0 or cy < 0 or cx >= BOARDSIZE[0] or cy >= BOARDSIZE[1]: return
-	WORLD[cx][cy] = 0
+	WORLD[cx][cy] = "air"
 	for x in range(cx - rad, cx + rad + 1):
 		for y in range(cy - rad, cy + rad + 1):
 			if ((x - cx) ** 2) + ((y - cy) ** 2) > (rad ** 2): continue
 			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue
-			WORLD[x][y] = 0
+			WORLD[x][y] = "air"
 def drawPointWater(cx, cy, rad):
 	if cx < 0 or cy < 0 or cx >= BOARDSIZE[0] or cy >= BOARDSIZE[1]: return
-	WORLD[cx][cy] = 0
+	WORLD[cx][cy] = "air"
 	for x in range(cx - rad, cx + rad + 1):
 		for y in range(cy - rad, cy + rad + 1):
 			if ((x - cx) ** 2) + ((y - cy) ** 2) > (rad ** 2): continue
 			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue
-			WORLD[x][y] = 5
+			WORLD[x][y] = "water"
 
 def makeNoodleCave(startX, startY, targetX, targetY):
 	x = startX
