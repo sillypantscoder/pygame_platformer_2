@@ -152,6 +152,7 @@ class Entity:
 		self.vx = 0
 		self.vy = 0
 		self.standing = False
+		self.canjump = False
 		self.ticking = True
 		self.memory = None
 		self.initmemory()
@@ -160,6 +161,7 @@ class Entity:
 		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 280 - playery)))
 	def tick(self):
 		self.standing = False
+		self.canjump = False
 		if not self.ticking: return
 		self.x += self.vx
 		self.y += self.vy
@@ -179,7 +181,7 @@ class Entity:
 					if pygame.Rect(self.x, self.y + 1, 10, 10).colliderect(cellrect):
 						if self.vy > 1.5: self.vy = 1.5
 						if self.vy < -1.5: self.vy = -1.5
-						self.standing = True
+						self.canjump = True
 		# Velocity computations
 		self.vx *= 0.5
 		if len(touching_platforms) == 0:
@@ -193,6 +195,7 @@ class Entity:
 					self.vy = 0
 					self.y = platform.top - 10
 					self.standing = True
+					self.canjump = True
 					pygame.draw.line(totalScreen, (0, 255, 0), platform.topleft, platform.topright, 5)
 					if WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)] == "sand":
 						# Standing on sand!
@@ -260,7 +263,7 @@ class Player(Entity):
 			self.vx -= 1
 		if keys[pygame.K_RIGHT]:
 			self.vx += 1
-		if keys[pygame.K_UP] and self.standing:
+		if keys[pygame.K_UP] and self.canjump:
 			self.vy = -3.1
 	def despawn(self):
 		pygame.quit()
@@ -271,7 +274,7 @@ class Monster(Entity):
 	def initmemory(self):
 		self.memory = {"direction": None}
 	def opt_ai_calc(self):
-		if self.standing and random.random() < 0.06: self.vy = -3.1
+		if self.canjump and random.random() < 0.06: self.vy = -3.1
 		if self.memory["direction"]:
 			self.vx += self.memory["direction"]
 			if random.random() < 0.1: self.memory["direction"] = None
@@ -362,7 +365,7 @@ class Allay(Entity):
 			self.vx -= 1
 		else: self.vx += 1
 		# If the target is more than half a block above me, jump.
-		if target.y - self.y < -(CELLSIZE / 2) and self.standing: self.vy -= 3.1
+		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
 
 class AllaySpawner(Entity):
 	color = (0, 100, 150)

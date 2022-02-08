@@ -18,7 +18,7 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BROWN = (28, 2, 0)
 TAN = (255, 241, 171)
-WORLD = [[random.choice([0, 1]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
+WORLD = [[random.choice(["air", "stone"]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
 CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
@@ -34,11 +34,12 @@ f.close()
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
 pallete = [
-	{"color": WHITE, "id": 0, "rect": pygame.Rect(0, 0, CELLSIZE, CELLSIZE)},
-	{"color": BLACK, "id": 1, "rect": pygame.Rect(CELLSIZE, 0, CELLSIZE, CELLSIZE)},
-	{"color": RED, "id": 2, "rect": pygame.Rect(CELLSIZE*2, 0, CELLSIZE, CELLSIZE)},
-	{"color": BROWN, "id": 3, "rect": pygame.Rect(CELLSIZE*3, 0, CELLSIZE, CELLSIZE)},
-	{"color": TAN, "id": 4, "rect": pygame.Rect(CELLSIZE*4, 0, CELLSIZE, CELLSIZE)}
+	{"color": WHITE,         "id": "air",           "rect": pygame.Rect(0, 0, CELLSIZE, CELLSIZE)},
+	{"color": BLACK,         "id": "stone",         "rect": pygame.Rect(CELLSIZE, 0, CELLSIZE, CELLSIZE)},
+	{"color": RED,           "id": "tnt",           "rect": pygame.Rect(CELLSIZE*2, 0, CELLSIZE, CELLSIZE)},
+	{"color": BROWN,         "id": "hard_stone",    "rect": pygame.Rect(CELLSIZE*3, 0, CELLSIZE, CELLSIZE)},
+	{"color": TAN,           "id": "sand",          "rect": pygame.Rect(CELLSIZE*4, 0, CELLSIZE, CELLSIZE)},
+	{"color": (50, 50, 255), "id": "water", "rect": pygame.Rect(CELLSIZE*5, 0, CELLSIZE, CELLSIZE)}
 ]
 selectedbrush = 0
 
@@ -79,14 +80,16 @@ while running:
 	for x in range(len(WORLD)):
 		for y in range(len(WORLD[x])):
 			cell = WORLD[x][y]
-			if cell == 1:
+			if cell == "stone":
 				pygame.draw.rect(totalScreen, BLACK, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
-			if cell == 2:
+			if cell == "tnt":
 				pygame.draw.rect(totalScreen, RED, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
-			if cell == 3:
+			if cell == "hard_stone":
 				pygame.draw.rect(totalScreen, BROWN, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
-			if cell == 4:
+			if cell == "sand":
 				pygame.draw.rect(totalScreen, TAN, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
+			if cell == "water":
+				pygame.draw.rect(totalScreen, (50, 50, 255), pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
 			if pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE).collidepoint(pos):
 				selectedx = x
 				selectedy = y
