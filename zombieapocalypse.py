@@ -26,12 +26,13 @@ CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
 
-screen = pygame.display.set_mode([500, 560])
+screen = pygame.display.set_mode([500, 570])
 
 # WORLD SELECTION -----------------------------------------
 
 wr = True
-alwaystick = False
+alwaystick = True
+autoapocalypse = False
 
 running = True
 while running:
@@ -45,11 +46,11 @@ while running:
 	g = FONT.render("Go >", True, GREEN)
 	screen.blit(g, (0, wy))
 	gy = g.get_height() + wy
-	# Always ticking?
-	if alwaystick:
-		a = FONT.render("Always tick entities: Y", True, BLACK)
+	# Auto Apocalypse?
+	if autoapocalypse:
+		a = FONT.render("Auto Apocalypse: Y", True, BLACK)
 	else:
-		a = FONT.render("Always tick entities: N", True, BLACK)
+		a = FONT.render("Auto Apocalypse: N", True, BLACK)
 	screen.blit(a, (0, wy + gy))
 	ay = a.get_height() + wy + gy
 	# Events
@@ -64,33 +65,14 @@ while running:
 				elif pos[1] < gy:
 					running = False
 				elif pos[1] < ay:
-					alwaystick = not alwaystick
+					autoapocalypse = not autoapocalypse
 	c.tick(60)
 	pygame.display.flip()
 
 # GENERATOR SELECTION
 
-items = listdir("generators")
-running = wr
-while running:
-	screen.fill(WHITE)
-	for i in range(len(items)):
-		w = FONT.render(items[i], True, BLACK)
-		screen.blit(w, (0, i * 40))
-	for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.quit(); exit()
-				# User clicked close button
-			if event.type == pygame.MOUSEBUTTONUP:
-				pos = pygame.mouse.get_pos()
-				y = math.floor(pos[1] / 40)
-				wr = items[y]
-				running = False
-	c.tick(60)
-	pygame.display.flip()
-
 if wr:
-	system("python3 generators/" + wr)
+	system("python3 generators/grid.py")
 f = open("world.json", "r")
 WORLD = json.loads(f.read())
 f.close()
@@ -142,7 +124,7 @@ def explosion(cx, cy, rad):
 	for l in more:
 		explosion(*l, 2)
 	if random.random() < 0.3:
-		Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
+		ScoreItem((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
 
 class Entity:
 	color = (0, 0, 0)
@@ -257,15 +239,37 @@ class Entity:
 
 class Player(Entity):
 	color = (255, 0, 0)
+	def initmemory(self):
+		self.memory = {"health": 500}
 	def tickmove(self):
 		if self in things: things.remove(self)
-		keys = pygame.key.get_pressed()
-		if keys[pygame.K_LEFT]:
-			self.vx -= 1
-		if keys[pygame.K_RIGHT]:
-			self.vx += 1
-		if keys[pygame.K_UP] and self.canjump:
-			self.vy = -3.1
+		if autoapocalypse:
+			# Find a target.
+			target = None
+			targetdist = 1000
+			for t in things:
+				dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
+				# Find the closest Item, but if a ScoreItem is available, go for that instead.
+				# 30% chance of targeting a different Item.
+				if (dist < targetdist or random.random()<0.3 or isinstance(t, ScoreItem)) and isinstance(t, Item):
+					target = t
+					targetdist = dist
+			if not target: return
+			# Go left or right depending on where the target is.
+			if target.x < self.x:
+				self.vx -= 1
+			else: self.vx += 1
+			# If the target is more than half a block above me, jump.
+			if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
+		else:
+			keys = pygame.key.get_pressed()
+			if keys[pygame.K_LEFT]:
+				self.vx -= 1
+			if keys[pygame.K_RIGHT]:
+				self.vx += 1
+			if keys[pygame.K_UP] and self.canjump:
+				self.vy = -3.1
+		if self.memory["health"] <= 0: self.die()
 	def despawn(self):
 		pygame.quit()
 		exit()
@@ -274,6 +278,9 @@ class Monster(Entity):
 	color = (0, 150, 0)
 	def initmemory(self):
 		self.memory = {"direction": None}
+	def tickmove(self):
+		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(player.x, player.y, 10, 10)):
+			player.memory["health"] -= 1
 	def opt_ai_calc(self):
 		# Find a target.
 		target = player
@@ -285,26 +292,15 @@ class Monster(Entity):
 		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
 	def despawn(self):
 		for i in range(random.choice([0, 1, 2, 3])):
-			self.drop(Item)
-
-class ExplodingMonster(Monster):
-	color = (0, 255, 0)
-	def despawn(self):
-		self.createExplosion(3)
-		for i in range(random.choice([0, 1, 2, 3])):
 			self.drop(ScoreItem)
-
-class Spawner(Entity):
-	color = (0, 0, 150)
-	def tickmove(self):
-		if random.random() < 0.1: Monster(self.x, self.y)
-		if random.random() < 0.005: ExplodingMonster(self.x, self.y)
 
 class Item(Entity):
 	def initmemory(self):
-		self.memory = {"img": "danger", "img_surface": None}
+		self.memory = {"img": "danger", "img_surface": None, "stacksize": 1}
 	def draw(self, playerx, playery):
-		if (not self.memory["img_surface"]): self.memory["img_surface"] = pygame.transform.scale(pygame.image.load(self.memory["img"] + ".png"), (10, 10))
+		#size = 5 + (self.memory["stacksize"] * 5)
+		size = 10
+		self.memory["img_surface"] = pygame.transform.scale(pygame.image.load(self.memory["img"] + ".png"), (size, size))
 		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx), self.y + (280 - playery)))
 		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(playerx, playery, 10, 10)):
 			self.die()
@@ -312,15 +308,18 @@ class Item(Entity):
 		for t in things:
 			if isinstance(t, Allay) and pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(t.x, t.y, 10, 10)):
 				self.die()
-				gainitem(self.memory["img"])
+				for i in range(self.memory["stacksize"]): gainitem(self.memory["img"])
+			if isinstance(t, Item) and not t == self:
+				if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(t.x, t.y, 10, 10)):
+					if t.memory["img"] == self.memory["img"]:
+						self.memory["stacksize"] += t.memory["stacksize"]
+						t.die()
 	def opt_ai_calc(self):
 		if self.vy >= 0.5: self.vy = 0.5
 
-
-
 class ScoreItem(Item):
 	def initmemory(self):
-		self.memory = {"img": "score", "img_surface": None}
+		self.memory = {"img": "score", "img_surface": None, "stacksize": 1}
 
 class Particle(Entity):
 	def initmemory(self):
@@ -383,7 +382,6 @@ def gainitem(item):
 things = []
 player = Player(100, 0)
 items = {
-	"danger": 0,
 	"score": 0
 }
 tickingrefresh = 10
@@ -397,22 +395,15 @@ while True:
 			# User clicked close button
 		if event.type == pygame.MOUSEBUTTONUP:
 			pos = pygame.mouse.get_pos()
-			if items["danger"] >= 15:
-				items["danger"] -= 15
-				Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250))
 		if event.type == pygame.KEYDOWN:
 			keys = pygame.key.get_pressed()
 			if keys[pygame.K_SPACE]:
 				if items["danger"] >= 10:
 					items["danger"] -= 10
 					player.createExplosion(2)
-			if keys[pygame.K_z]:
-				if items["danger"] >= 5:
-					items["danger"] -= 5
-					Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 			if keys[pygame.K_q]:
 				for t in things:
-					if isinstance(t, (Item, Monster, Spawner)) and not isinstance(t, ScoreItem):
+					if isinstance(t, (Item, Monster)):
 						t.die()
 			if keys[pygame.K_w]:
 				AllaySpawner(player.x, player.y)
@@ -458,7 +449,7 @@ while True:
 				tickingcount += 1
 			else: t.ticking = False
 	# Spawning
-	if random.random() < 0.01:
+	if random.random() < (0.01 * items["score"]) + 0.04:
 		Monster(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 	# Players & Screen
 	player.tick()
@@ -469,10 +460,8 @@ while True:
 	for t in things:
 		t.draw(player.x, player.y)
 		# Despawning
-		if random.random() < 0.005 and not isinstance(t, Item):
+		if random.random() < 0.005:
 			t.die()
-		#elif random.random() < 0.0001 and isinstance(t, Item):
-			#t.die()
 		# Dying
 		elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 			t.die()
@@ -487,10 +476,13 @@ while True:
 	# Debug info
 	pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
 	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
-	w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
+	w = FONT.render(f"Score: {str(items['score'])}", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
 	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
 	screen.blit(w, (0, BOARDSIZE[1]))
+	# Health bar
+	pygame.draw.rect(screen, RED, pygame.Rect(0, 560, 500, 10))
+	pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"], 10))
 	# Flip
 	pygame.display.flip()
 	c.tick(60)

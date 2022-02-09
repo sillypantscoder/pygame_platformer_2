@@ -300,9 +300,11 @@ class Spawner(Entity):
 
 class Item(Entity):
 	def initmemory(self):
-		self.memory = {"img": "danger", "img_surface": None}
+		self.memory = {"img": "danger", "img_surface": None, "stacksize": 1}
 	def draw(self, playerx, playery):
-		if (not self.memory["img_surface"]): self.memory["img_surface"] = pygame.transform.scale(pygame.image.load(self.memory["img"] + ".png"), (10, 10))
+		#size = 5 + (self.memory["stacksize"] * 5)
+		size = 10
+		self.memory["img_surface"] = pygame.transform.scale(pygame.image.load(self.memory["img"] + ".png"), (size, size))
 		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx), self.y + (280 - playery)))
 		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(playerx, playery, 10, 10)):
 			self.die()
@@ -310,15 +312,18 @@ class Item(Entity):
 		for t in things:
 			if isinstance(t, Allay) and pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(t.x, t.y, 10, 10)):
 				self.die()
-				gainitem(self.memory["img"])
+				for i in range(self.memory["stacksize"]): gainitem(self.memory["img"])
+			if isinstance(t, Item) and not t == self:
+				if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(t.x, t.y, 10, 10)):
+					if t.memory["img"] == self.memory["img"]:
+						self.memory["stacksize"] += t.memory["stacksize"]
+						t.die()
 	def opt_ai_calc(self):
 		if self.vy >= 0.5: self.vy = 0.5
 
-
-
 class ScoreItem(Item):
 	def initmemory(self):
-		self.memory = {"img": "score", "img_surface": None}
+		self.memory = {"img": "score", "img_surface": None, "stacksize": 1}
 
 class Particle(Entity):
 	def initmemory(self):
