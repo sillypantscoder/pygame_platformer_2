@@ -240,9 +240,10 @@ class Entity:
 class Player(Entity):
 	color = (255, 0, 0)
 	def initmemory(self):
-		self.memory = {"health": 500}
+		self.memory = {"health": 100, "direction": None}
 	def tickmove(self):
 		if self in things: things.remove(self)
+		if self.memory["health"] <= 0: endgame(self)
 		if autoapocalypse:
 			# Find a target.
 			target = None
@@ -250,17 +251,23 @@ class Player(Entity):
 			for t in things:
 				dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
 				# Find the closest Item, but if a ScoreItem is available, go for that instead.
-				# 30% chance of targeting a different Item.
-				if (dist < targetdist or random.random()<0.3 or isinstance(t, ScoreItem)) and isinstance(t, Item):
+				if (dist < targetdist or isinstance(t, ScoreItem)) and isinstance(t, Item):
 					target = t
 					targetdist = dist
-			if not target: return
-			# Go left or right depending on where the target is.
-			if target.x < self.x:
-				self.vx -= 1
-			else: self.vx += 1
-			# If the target is more than half a block above me, jump.
-			if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
+			if not target:
+				if self.canjump and random.random() < 0.06: self.vy = -3.1
+				if self.memory["direction"]:
+					self.vx += self.memory["direction"]
+					if random.random() < 0.1: self.memory["direction"] = None
+				else:
+					self.memory["direction"] = random.choice([1, -1])
+			else:
+				# Go left or right depending on where the target is.
+				if target.x < self.x:
+					self.vx -= 1
+				else: self.vx += 1
+				# If the target is more than half a block above me, jump.
+				if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
 		else:
 			keys = pygame.key.get_pressed()
 			if keys[pygame.K_LEFT]:
@@ -269,7 +276,6 @@ class Player(Entity):
 				self.vx += 1
 			if keys[pygame.K_UP] and self.canjump:
 				self.vy = -3.1
-		if self.memory["health"] <= 0: self.die()
 	def despawn(self):
 		pygame.quit()
 		exit()
@@ -374,6 +380,22 @@ class AllaySpawner(Entity):
 	def tickmove(self):
 		if random.random() < 0.1: Allay(self.x, self.y)
 
+def endgame(player):
+	wc = FONT.render("Click anywhere to exit", True, BLACK)
+	while True:
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				player.despawn()
+				# User clicked close button
+			if event.type == pygame.MOUSEBUTTONUP:
+				player.despawn()
+		screen.fill(WHITE)
+		w = FONT.render(f"Score: {str(items['score'])}", True, BLACK)
+		screen.blit(w, (CELLSIZE, CELLSIZE))
+		screen.blit(wc, (CELLSIZE, CELLSIZE + w.get_height() + 10))
+		pygame.display.flip()
+		c.tick(60)
+
 def gainitem(item):
 	if not item in items:
 		items[item] = 0
@@ -403,7 +425,7 @@ while True:
 					player.createExplosion(2)
 			if keys[pygame.K_q]:
 				for t in things:
-					if isinstance(t, (Item, Monster)):
+					if isinstance(t, (Item, Monster, Particle)):
 						t.die()
 			if keys[pygame.K_w]:
 				AllaySpawner(player.x, player.y)
@@ -449,8 +471,10 @@ while True:
 				tickingcount += 1
 			else: t.ticking = False
 	# Spawning
-	if random.random() < (0.01 * items["score"]) + 0.04:
-		Monster(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+	if random.random() < (0.01 * items["score"]) + 0.05:
+		pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+		Monster(*pos)
+		Particle(*pos)
 	# Players & Screen
 	player.tick()
 	for t in things:
@@ -476,13 +500,13 @@ while True:
 	# Debug info
 	pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
 	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
-	w = FONT.render(f"Score: {str(items['score'])}", True, BLACK)
+	w = FONT.render(f"Score: {str(items['score'])}, HP: {str(player.memory['health'])}", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
 	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
 	screen.blit(w, (0, BOARDSIZE[1]))
 	# Health bar
 	pygame.draw.rect(screen, RED, pygame.Rect(0, 560, 500, 10))
-	pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"], 10))
+	pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * 5, 10))
 	# Flip
 	pygame.display.flip()
 	c.tick(60)
