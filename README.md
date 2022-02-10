@@ -11,7 +11,7 @@ In this version:
 
 ## Read this first before playing the game:
 
-To play the game, run "python3 main.py". Then click on "Go" and click on "default.py". You will appear in a randomly generated world.
+To play the game, run "python3 main.py" in the terminal. Then click on "Go" and click on "default.py". You will appear in a randomly generated world.
 
 1. You are the red square. You can walk around with the arrow keys, and up to jump.
 2. Walking into red TNT blocks will explode them. A big danger icon ![](textures/particle/danger.png) will appear whenever there is an explosion.
@@ -30,3 +30,15 @@ To play the game, run "python3 main.py". Then click on "Go" and click on "defaul
 ### Allays
 - Press the W key to create an Allay Spawner. The Allay Spawner will spawn lots of Allays.
 - Allays try to get to the nearest Item and pick it up for you.
+
+## Zombie Apocalypse Mode
+Ok, maybe I should explain "zombieapocalypse.py".
+
+- To run the game in Zombie Apocalypse Mode, run "python3 zombieapocalypse.py" instead of "python3 main.py".
+- New "Auto Apocalypse" option: When enabled, a bot plays the game instead of you.
+- Always uses the "Grid" generator.
+- Monsters spawn frequently around the map. When they despawn, they drop ScoreItems.
+- Monsters try to pathfind towards you. If they touch you, your helth decreases.
+- If your health runs out, you die.
+- You can't click or press Z to spawn Spawners.
+- It is _very hard_. Have fun! :D
