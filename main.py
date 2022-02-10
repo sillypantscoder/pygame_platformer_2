@@ -303,8 +303,8 @@ class Item(Entity):
 		self.memory = {"img": "danger", "img_surface": None, "stacksize": 1}
 	def draw(self, playerx, playery):
 		#size = 5 + (self.memory["stacksize"] * 5)
-		size = 10
-		self.memory["img_surface"] = pygame.transform.scale(pygame.image.load(self.memory["img"] + ".png"), (size, size))
+		size = 11
+		self.memory["img_surface"] = pygame.transform.scale(pygame.image.load("textures/item/" + self.memory["img"] + ".png"), (size, size))
 		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx), self.y + (280 - playery)))
 		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(playerx, playery, 10, 10)):
 			self.die()
@@ -329,7 +329,7 @@ class Particle(Entity):
 	def initmemory(self):
 		self.memory = {"img": "danger", "img_surface": None, "ticks": 100}
 	def draw(self, playerx, playery):
-		if (not self.memory["img_surface"]): self.memory["img_surface"] = pygame.image.load(self.memory["img"] + ".png")
+		if (not self.memory["img_surface"]): self.memory["img_surface"] = pygame.image.load("textures/particle/" + self.memory["img"] + ".png")
 		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx) + (self.memory["img_surface"].get_width() * -0.5), self.y + (280 - playery) + (self.memory["img_surface"].get_width() * -0.5)))
 		if self.memory["ticks"] < 1:
 			self.die()
@@ -415,7 +415,7 @@ while True:
 					Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 			if keys[pygame.K_q]:
 				for t in things:
-					if isinstance(t, (Item, Monster, Spawner)) and not isinstance(t, ScoreItem):
+					if isinstance(t, (Item, Monster, Spawner, Particle)) and not isinstance(t, ScoreItem):
 						t.die()
 			if keys[pygame.K_w]:
 				AllaySpawner(player.x, player.y)
