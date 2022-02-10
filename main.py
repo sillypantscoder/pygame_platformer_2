@@ -431,7 +431,8 @@ while True:
 				if cell == "stone":
 					pygame.draw.rect(totalScreen, BLACK, cellrect)
 				if cell == "tnt":
-					pygame.draw.rect(totalScreen, RED, cellrect)
+					#pygame.draw.rect(totalScreen, RED, cellrect)
+					totalScreen.blit(pygame.image.load("textures/block/tnt.png"), cellrect.topleft)
 				if cell == "hard_stone":
 					pygame.draw.rect(totalScreen, BROWN, cellrect)
 				if cell == "sand":
