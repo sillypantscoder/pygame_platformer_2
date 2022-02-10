@@ -444,10 +444,10 @@ while True:
 							sets.append({"pos": (x, y + 1), "state": "falling_water"})
 						elif y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] == "stone":
 							# Or flow left
-							if WORLD[x - 1][y] == "air":
+							if x - 1 > 0 and WORLD[x - 1][y] == "air":
 								sets.append({"pos": (x - 1, y), "state": "falling_water"})
 							# Or flow right
-							if WORLD[x + 1][y] == "air":
+							if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] == "air":
 								sets.append({"pos": (x + 1, y), "state": "falling_water"})
 				if cell == "falling_water":
 					pygame.draw.rect(totalScreen, (60, 60, 255), cellrect)

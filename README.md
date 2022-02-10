@@ -38,7 +38,7 @@ Ok, maybe I should explain "zombieapocalypse.py".
 - New "Auto Apocalypse" option: When enabled, a bot plays the game instead of you.
 - Always uses the "Grid" generator.
 - Monsters spawn frequently around the map. When they despawn, they drop ScoreItems.
-- Monsters try to pathfind towards you. If they touch you, your helth decreases.
+- Monsters try to pathfind towards you. If they touch you, your health decreases.
 - If your health runs out, you die.
 - You can't click or press Z to spawn Spawners.
 - It is _very hard_. Have fun! :D
