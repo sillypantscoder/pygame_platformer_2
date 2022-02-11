@@ -71,7 +71,17 @@ while running:
 # GENERATOR SELECTION
 
 if wr:
-	system("python3 generators/grid.py")
+	WORLD = []
+	for x in range(BOARDSIZE[0]):
+		WORLD.append([])
+		for y in range(BOARDSIZE[1]):
+			if x % 2 == 0 and y % 2 == 0: WORLD[x].append("hard_stone")
+			elif x % 2 == 0 or y % 2 == 0: WORLD[x].append(random.choice(["hard_stone", "air", "air", "tnt"]))
+			else: WORLD[x].append("air")
+	f = open("world.json", "w")
+	f.write(json.dumps(WORLD).replace("], [", 	"],\n ["))
+	f.close()
+
 f = open("world.json", "r")
 WORLD = json.loads(f.read())
 f.close()
@@ -238,8 +248,16 @@ class Entity:
 
 class Player(Entity):
 	color = (255, 0, 0)
+	def draw(self, playerx, playery):
+		mvx = 250 - playerx
+		mvy = 280 - playery
+		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((mvx, mvy)))
+		if self.memory["target"]:
+			color = GREEN
+			if isinstance(self.memory["target"], Monster): color = RED
+			pygame.draw.line(screen, color, (self.x + mvx + 5, self.y + mvy + 5), (self.memory["target"].x + mvx + 5, self.memory["target"].y + mvy + 5))
 	def initmemory(self):
-		self.memory = {"health": 100, "direction": None}
+		self.memory = {"health": 100, "direction": None, "target": None}
 	def tickmove(self):
 		if self in things: things.remove(self)
 		if self.memory["health"] <= 0: endgame(self)
@@ -250,23 +268,31 @@ class Player(Entity):
 			for t in things:
 				dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
 				# Find the closest Item, but if a ScoreItem is available, go for that instead.
-				if (dist < targetdist or isinstance(t, ScoreItem)) and isinstance(t, Item):
+				if (dist < targetdist) and (isinstance(t, Item) or (isinstance(t, Monster) and dist < CELLSIZE * 5)):
 					target = t
 					targetdist = dist
-			if not target:
-				if self.canjump and random.random() < 0.06: self.vy = -3.1
-				if self.memory["direction"]:
-					self.vx += self.memory["direction"]
-					if random.random() < 0.1: self.memory["direction"] = None
-				else:
-					self.memory["direction"] = random.choice([1, -1])
-			else:
+			self.memory["target"] = target
+			if isinstance(target, Item):
 				# Go left or right depending on where the target is.
 				if target.x < self.x:
 					self.vx -= 1
 				else: self.vx += 1
 				# If the target is more than half a block above me, jump.
 				if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
+			elif isinstance(target, Monster):
+				# Go right or left depending on where the target is.
+				if target.x < self.x:
+					self.vx += 1
+				else: self.vx -= 1
+				# If the target is not more than half a block above me, jump.
+				if target.y - self.y >= -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
+			else:
+				if self.canjump and random.random() < 0.06: self.vy = -3.1
+				if self.memory["direction"]:
+					self.vx += self.memory["direction"]
+					if random.random() < 0.1: self.memory["direction"] = None
+				else:
+					self.memory["direction"] = random.choice([1, -1])
 		else:
 			keys = pygame.key.get_pressed()
 			if keys[pygame.K_LEFT]:
@@ -401,7 +427,7 @@ def gainitem(item):
 	items[item] += 1
 
 things = []
-player = Player(100, 0)
+player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
 items = {
 	"score": 0
 }
@@ -419,9 +445,9 @@ while True:
 		if event.type == pygame.KEYDOWN:
 			keys = pygame.key.get_pressed()
 			if keys[pygame.K_SPACE]:
-				if items["danger"] >= 10:
-					items["danger"] -= 10
-					player.createExplosion(2)
+				for zzz in range(20):
+					pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+					Monster(*pos)
 			if keys[pygame.K_q]:
 				for t in things:
 					if isinstance(t, (Item, Monster, Particle)):
