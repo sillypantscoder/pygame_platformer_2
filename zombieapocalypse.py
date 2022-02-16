@@ -218,8 +218,8 @@ class Entity:
 						pygame.draw.line(totalScreen, (0, 255, 0), platform.bottomleft, platform.bottomright, 5)
 		# Respawning, Crashing, and Moving
 		if self.y > BOARDSIZE[1] * CELLSIZE:
-			self.x = 100
-			self.y = 0
+			self.x = (BOARDSIZE[0] / 2) * CELLSIZE
+			self.y = (BOARDSIZE[1] / 2) * CELLSIZE
 		if self.vx > 20 or self.vy > 20 or self.vx < -20 or self.vy < -20:
 			self.vx = 0
 			self.vy = 0

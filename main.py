@@ -25,6 +25,9 @@ WORLD = None
 CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
+f = open("blocks.json", "r")
+BLOCKS = json.loads(f.read())
+f.close()
 
 screen = pygame.display.set_mode([500, 560])
 
@@ -108,7 +111,7 @@ totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
 def explosion(cx, cy, rad):
 	if cx < 0 or cy < 0 or cx >= BOARDSIZE[0] or cy >= BOARDSIZE[1]: return
-	WORLD[cx][cy] = "air"
+	WORLD[cx][cy] = BLOCKS[WORLD[cx][cy]]["explosion"]
 	debugmsg(f"explosion at ({cx},{cy}) rad={rad}")
 	Particle((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
 	more = []
@@ -116,14 +119,11 @@ def explosion(cx, cy, rad):
 		for y in range(cy - rad, cy + rad + 1):
 			if ((x - cx) ** 2) + ((y - cy) ** 2) > (rad ** 2): continue
 			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue
-			if WORLD[x][y] == "tnt":
+			if BLOCKS[WORLD[cx][cy]]["collision"] == "explode":
 				more.append([x, y])
-				WORLD[x][y] = "air"
-			elif WORLD[x][y] == "stone":
-				WORLD[x][y] = "air"
-			elif WORLD[x][y] == "sand":
-				WORLD[x][y] = "air"
-				s = MovingBlock(x * CELLSIZE, y * CELLSIZE)
+			elif BLOCKS[WORLD[cx][cy]] == "fall":
+				MovingBlock(x * CELLSIZE, y * CELLSIZE)
+			WORLD[cx][cy] = BLOCKS[WORLD[cx][cy]]["explosion"]
 	for t in [player, *things]:
 		dx = t.x - ((cx + 0.5) * CELLSIZE)
 		dy = t.y - ((cy + 0.5) * CELLSIZE)
@@ -171,18 +171,21 @@ class Entity:
 		for x in range(len(WORLD)):
 			for y in range(len(WORLD[x])):
 				cell = WORLD[x][y]
+				if not cell in BLOCKS:
+					continue
 				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
-				if cell in ["stone", "hard_stone", "sand"]:
+				if BLOCKS[cell]["collision"] in ["solid", "fall"]:
 					if pygame.Rect(self.x, self.y + 1, 10, 10).colliderect(cellrect):
 						touching_platforms.append(cellrect)
-				if cell == "tnt":
+				if BLOCKS[cell]["collision"] == "explode":
 					if pygame.Rect(self.x, self.y + 1, 10, 10).colliderect(cellrect):
 						explosion(x, y, 2)
-				if "water" in cell:
+				if BLOCKS[cell]["collision"] == "swim":
 					if pygame.Rect(self.x, self.y + 1, 10, 10).colliderect(cellrect):
 						if self.vy > 1.5: self.vy = 1.5
 						if self.vy < -1.5: self.vy = -1.5
 						self.canjump = True
+						pygame.draw.rect(totalScreen, GREEN, cellrect, 5)
 		# Velocity computations
 		self.vx *= 0.5
 		if len(touching_platforms) == 0:
@@ -206,7 +209,7 @@ class Entity:
 								fall = True
 						except:
 							fall = True
-							errormsg(self, "jumped on sand at bottom of world")
+							errormsg(self, "jumped on falling block at bottom of world")
 						if fall:
 							WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)] = "air"
 							s = MovingBlock(*platform.topleft)
@@ -327,10 +330,19 @@ class ScoreItem(Item):
 
 class Particle(Entity):
 	def initmemory(self):
-		self.memory = {"img": "danger", "img_surface": None, "ticks": 100}
+		self.memory = {"img": "danger", "img_surface": None, "ticks": 100, "size": 0}
 	def draw(self, playerx, playery):
+		if self.memory["ticks"] > 70: self.memory["size"] += 2
 		if (not self.memory["img_surface"]): self.memory["img_surface"] = pygame.image.load("textures/particle/" + self.memory["img"] + ".png")
-		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx) + (self.memory["img_surface"].get_width() * -0.5), self.y + (280 - playery) + (self.memory["img_surface"].get_width() * -0.5)))
+		toDraw = pygame.transform.scale(self.memory["img_surface"], (self.memory["size"], self.memory["size"]))
+		drawX = self.x + (250 - playerx) + (self.memory["img_surface"].get_width() * -0.5)
+		drawY = self.y + (280 - playery) + (self.memory["img_surface"].get_height() * -0.5)
+		offsetX = (self.memory["img_surface"].get_width() - self.memory["size"]) / 2
+		offsetY = (self.memory["img_surface"].get_height() - self.memory["size"]) / 2
+		screen.blit(toDraw, (drawX + offsetX, drawY + offsetY))
+		# and the red ring
+		if self.memory["ticks"] > 70:
+			pygame.draw.circle(screen, RED, (round(drawX + (CELLSIZE / 4)), round(drawY + (CELLSIZE / 4))), self.memory["size"] + 5, 5)
 		if self.memory["ticks"] < 1:
 			self.die()
 	def tickmove(self):
@@ -428,49 +440,41 @@ while True:
 			for y in range(len(WORLD[x])):
 				cell = WORLD[x][y]
 				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
-				if cell == "stone":
-					pygame.draw.rect(totalScreen, BLACK, cellrect)
-				if cell == "tnt":
-					#pygame.draw.rect(totalScreen, RED, cellrect)
-					totalScreen.blit(pygame.image.load("textures/block/tnt.png"), cellrect.topleft)
-				if cell == "hard_stone":
-					pygame.draw.rect(totalScreen, BROWN, cellrect)
-				if cell == "sand":
-					pygame.draw.rect(totalScreen, TAN, cellrect)
-				if cell == "water":
-					pygame.draw.rect(totalScreen, (50, 50, 255), cellrect)
+				if cell in BLOCKS:
+					pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
 					if tickingrefresh == 0:
-						# Fall down
-						if y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] == "air":
-							sets.append({"pos": (x, y + 1), "state": "falling_water"})
-						elif y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] == "stone":
-							# Or flow left
-							if x - 1 > 0 and WORLD[x - 1][y] == "air":
-								sets.append({"pos": (x - 1, y), "state": "falling_water"})
-							# Or flow right
-							if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] == "air":
-								sets.append({"pos": (x + 1, y), "state": "falling_water"})
-				if cell == "falling_water":
-					pygame.draw.rect(totalScreen, (60, 60, 255), cellrect)
-					if tickingrefresh == 0:
-						# Stop falling
-						sets.append({"pos": (x, y), "state": "air"})
-						if ("water" in WORLD[x][y - 1]) and y - 1 >= 0:
-							sets.append({"pos": (x, y), "state": "falling_water"})
-						if x + 1 < BOARDSIZE[0] and ("water" in WORLD[x + 1][y]):
-							sets.append({"pos": (x, y), "state": "falling_water"})
-						if x - 1 > 0 and ("water" in WORLD[x - 1][y]):
-							sets.append({"pos": (x, y), "state": "falling_water"})
-						# Fall down
-						if y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] == "air":
-							sets.append({"pos": (x, y + 1), "state": "falling_water"})
-						elif y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] == "stone":
-							# Or flow left
-							if x - 1 > 0 and WORLD[x - 1][y] == "air":
-								sets.append({"pos": (x - 1, y), "state": "falling_water"})
-							# Or flow right
-							if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] == "air":
-								sets.append({"pos": (x + 1, y), "state": "falling_water"})
+						if BLOCKS[cell]["fluid"] == "source":
+							# Fall down
+							if y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
+								sets.append({"pos": (x, y + 1), "state": "flowing_" + cell})
+							elif y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
+								# Or flow left
+								if x - 1 > 0 and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x - 1, y), "state": "flowing_" + cell})
+								# Or flow right
+								if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x + 1, y), "state": "flowing_" + cell})
+						if BLOCKS[cell]["fluid"] == "flowing":
+							# Stop falling
+							sets.append({"pos": (x, y), "state": "air"})
+							if WORLD[x][y - 1] in [cell, cell[8:]] and y - 1 >= 0:
+								sets.append({"pos": (x, y), "state": cell})
+							if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] in [cell, cell[8:]]:
+								sets.append({"pos": (x, y), "state": cell})
+							if x - 1 > 0 and WORLD[x - 1][y] in [cell, cell[8:]]:
+								sets.append({"pos": (x, y), "state": cell})
+							# Fall down
+							if y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
+								sets.append({"pos": (x, y + 1), "state": cell})
+							elif y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
+								# Or flow left
+								if x - 1 > 0 and WORLD[x - 1][y] in BLOCKS and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x - 1, y), "state": cell})
+								# Or flow right
+								if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x + 1, y), "state": cell})
+				else:
+					pygame.draw.rect(totalScreen, (255, 0, 255), cellrect)
 	# Fluids and scheduled ticks
 	for s in sets:
 		WORLD[s["pos"][0]][s["pos"][1]] = s["state"]

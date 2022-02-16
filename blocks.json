@@ -1,0 +1,44 @@
+{
+	"air": {
+		"collision": "empty",
+		"color": [255, 255, 255],
+		"explosion": "air",
+		"fluid": false
+	},
+	"stone": {
+		"collision": "solid",
+		"color": [0, 0, 0],
+		"explosion": "air",
+		"fluid": false
+	},
+	"tnt": {
+		"collision": "explode",
+		"color": [255, 0, 0],
+		"explosion": "air",
+		"fluid": false
+	},
+	"hard_stone": {
+		"collision": "solid",
+		"color": [28, 2, 0],
+		"explosion": "hard_stone",
+		"fluid": false
+	},
+	"sand": {
+		"collision": "fall",
+		"color": [255, 241, 171],
+		"explosion": "fall",
+		"fluid": false
+	},
+	"water": {
+		"collision": "swim",
+		"explosion": "water",
+		"color": [50, 50, 255],
+		"fluid": "source"
+	},
+	"flowing_water": {
+		"collision": "swim",
+		"explosion": "air",
+		"color": [60, 60, 255],
+		"fluid": "flowing"
+	}
+}
