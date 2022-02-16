@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 status=$(git status -s);
 
 tfind=$"\n M";
@@ -11,7 +11,7 @@ fi
 
 echo "Updates available:\n"
 git fetch -q
-GIT_PAGER=cat git log --no-decorate --reverse --pretty=%C\(bold\)Update:\ %C\(red\)%s%n\ \ \ \ \ \ \ \ %b ..origin/main
+GIT_PAGER=/bin/cat git log --no-decorate --reverse --pretty=%C\(bold\)Update:\ %C\(red\)%s%Creset%n\ \ \ \ \ \ \ \ %b ..origin/main
 echo
 read -p "Continue (y/n)? " choice
 case "$choice" in
