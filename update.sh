@@ -10,7 +10,8 @@ if [[ $"\n$status" == *"$tfind"* ]]; then
 fi
 
 echo "Updates available:\n"
-git fetch -q && git log --no-decorate --reverse --pretty=%C\(bold\)Update:\ %C\(red\)%s%n\ \ \ \ \ \ \ \ %b ..origin/main
+git fetch -q
+GIT_PAGER=cat git log --no-decorate --reverse --pretty=%C\(bold\)Update:\ %C\(red\)%s%n\ \ \ \ \ \ \ \ %b ..origin/main
 echo
 read -p "Continue (y/n)? " choice
 case "$choice" in
