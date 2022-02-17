@@ -33,14 +33,14 @@ f.close()
 
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
-pallete = [
-	{"color": WHITE,         "id": "air",           "rect": pygame.Rect(0, 0, CELLSIZE, CELLSIZE)},
-	{"color": BLACK,         "id": "stone",         "rect": pygame.Rect(CELLSIZE, 0, CELLSIZE, CELLSIZE)},
-	{"color": RED,           "id": "tnt",           "rect": pygame.Rect(CELLSIZE*2, 0, CELLSIZE, CELLSIZE)},
-	{"color": BROWN,         "id": "hard_stone",    "rect": pygame.Rect(CELLSIZE*3, 0, CELLSIZE, CELLSIZE)},
-	{"color": TAN,           "id": "sand",          "rect": pygame.Rect(CELLSIZE*4, 0, CELLSIZE, CELLSIZE)},
-	{"color": (50, 50, 255), "id": "water", "rect": pygame.Rect(CELLSIZE*5, 0, CELLSIZE, CELLSIZE)}
-]
+pallete = []
+f = open("blocks.json", "r")
+BLOCKS = json.loads(f.read())
+f.close()
+pos = 0
+for id in BLOCKS:
+	pallete.append({"color": BLOCKS[id]["color"], "id": id, "rect": pygame.Rect(CELLSIZE * pos, 0, CELLSIZE, CELLSIZE)})
+	pos += 1
 selectedbrush = 0
 
 running = True
@@ -72,33 +72,24 @@ while running:
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
-	# Player
-	pygame.draw.rect(screen, LIGHTRED, pygame.Rect(*playerpos, 10, 10).move((250 - playerpos[0], 250 - playerpos[1])))
-	pygame.draw.rect(totalScreen, RED, pygame.Rect(*playerpos, 10, 10))
-	touching_platforms = []
 	# World
 	for x in range(len(WORLD)):
 		for y in range(len(WORLD[x])):
 			cell = WORLD[x][y]
-			if cell == "stone":
-				pygame.draw.rect(totalScreen, BLACK, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
-			if cell == "tnt":
-				pygame.draw.rect(totalScreen, RED, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
-			if cell == "hard_stone":
-				pygame.draw.rect(totalScreen, BROWN, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
-			if cell == "sand":
-				pygame.draw.rect(totalScreen, TAN, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
-			if cell == "water":
-				pygame.draw.rect(totalScreen, (50, 50, 255), pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
+			if cell in BLOCKS:
+				pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
 			if pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE).collidepoint(pos):
 				selectedx = x
 				selectedy = y
 				pygame.draw.rect(totalScreen, RED, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE), 10)
+	# Player
+	pygame.draw.rect(screen, LIGHTRED, pygame.Rect(*playerpos, 10, 10).move((250 - playerpos[0], 250 - playerpos[1])))
+	pygame.draw.rect(totalScreen, RED, pygame.Rect(*playerpos, 10, 10))
+	# FLIP -----------------
+	screen.blit(totalScreen, (250 - playerpos[0], 250 - playerpos[1]))
 	# Pallete
 	for o in pallete:
 		pygame.draw.rect(screen, o["color"], o["rect"])
-	# FLIP -----------------
-	screen.blit(totalScreen, (250 - playerpos[0], 250 - playerpos[1]))
 	pygame.display.flip()
 	c.tick(60)
 pygame.quit()
