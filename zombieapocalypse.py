@@ -5,6 +5,7 @@ import pygame
 import json
 import math
 import datetime
+import zipHelpers
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -24,9 +25,8 @@ WORLD = None
 CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
-f = open("blocks.json", "r")
-BLOCKS = json.loads(f.read())
-f.close()
+rawStyleItems = zipHelpers.extract_zip("default.zip").items
+BLOCKS = json.loads(rawStyleItems["blocks.json"].decode("UTF-8"))
 
 screen = pygame.display.set_mode([500, 570])
 
@@ -73,6 +73,7 @@ while running:
 
 # GENERATOR SELECTION
 
+
 if wr:
 	WORLD = []
 	for x in range(BOARDSIZE[0]):
@@ -91,6 +92,24 @@ f.close()
 
 # PLAYING -------------------------------------------------
 
+def bytesToSurface(b: bytes):
+	f = open("texture.png", "wb")
+	f.write(b)
+	f.close()
+	s = pygame.image.load("texture.png")
+	system("rm texture.png")
+	return s
+
+textures = {}
+for filename in rawStyleItems:
+	if "textures/" in filename:
+		if filename[-1] != "/":
+			try:
+				textures[filename[9:]] = bytesToSurface(rawStyleItems[filename])
+			except:
+				print(filename)
+				exit(1)
+
 def errormsg(entity, msg):
 	if "--show-errors" in sys.argv:
 		print(u"\u001b[31m" + f"[ {repr(entity)} {msg} ]" + u"\u001b[0m")
@@ -108,13 +127,13 @@ def explosion(cx, cy, rad):
 	more = []
 	for x in range(cx - rad, cx + rad + 1):
 		for y in range(cy - rad, cy + rad + 1):
-			if ((x - cx) ** 2) + ((y - cy) ** 2) > (rad ** 2): continue
+			#if ((x - cx) ** 2) + ((y - cy) ** 2) > (rad ** 2): continue
 			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue
-			if BLOCKS[WORLD[cx][cy]]["collision"] == "explode":
+			if BLOCKS[WORLD[x][y]]["collision"] == "explode":
 				more.append([x, y])
-			elif BLOCKS[WORLD[cx][cy]] == "fall":
+			elif BLOCKS[WORLD[x][y]] == "fall":
 				MovingBlock(x * CELLSIZE, y * CELLSIZE)
-			WORLD[cx][cy] = BLOCKS[WORLD[cx][cy]]["explosion"]
+			WORLD[x][y] = BLOCKS[WORLD[x][y]]["explosion"]
 	for t in [player, *things]:
 		dx = t.x - ((cx + 0.5) * CELLSIZE)
 		dy = t.y - ((cy + 0.5) * CELLSIZE)
@@ -334,7 +353,7 @@ class Item(Entity):
 	def draw(self, playerx, playery):
 		#size = 5 + (self.memory["stacksize"] * 5)
 		size = 11
-		self.memory["img_surface"] = pygame.transform.scale(pygame.image.load("textures/item/" + self.memory["img"] + ".png"), (size, size))
+		self.memory["img_surface"] = pygame.transform.scale(textures["item/" + self.memory["img"] + ".png"], (size, size))
 		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx), self.y + (280 - playery)))
 		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(playerx, playery, 10, 10)):
 			self.die()
@@ -360,7 +379,7 @@ class Particle(Entity):
 		self.memory = {"img": "danger", "img_surface": None, "ticks": 100, "size": 0}
 	def draw(self, playerx, playery):
 		if self.memory["ticks"] > 70: self.memory["size"] += 2
-		if (not self.memory["img_surface"]): self.memory["img_surface"] = pygame.image.load("textures/particle/" + self.memory["img"] + ".png")
+		if (not self.memory["img_surface"]): self.memory["img_surface"] = textures["particle/" + self.memory["img"] + ".png"]
 		toDraw = pygame.transform.scale(self.memory["img_surface"], (self.memory["size"], self.memory["size"]))
 		drawX = self.x + (250 - playerx) + (self.memory["img_surface"].get_width() * -0.5)
 		drawY = self.y + (280 - playery) + (self.memory["img_surface"].get_height() * -0.5)

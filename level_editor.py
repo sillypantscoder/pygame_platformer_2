@@ -1,6 +1,7 @@
 import random
 import pygame
 import json
+import zipHelpers
 
 pygame.init()
 pygame.font.init()
@@ -22,6 +23,8 @@ WORLD = [[random.choice(["air", "stone"]) for x in range(BOARDSIZE[0])] for y in
 CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
+rawStyleItems = zipHelpers.extract_zip("default.zip").items
+BLOCKS = json.loads(rawStyleItems["blocks.json"].decode("UTF-8"))
 
 screen = pygame.display.set_mode([500, 500 + CELLSIZE])
 
@@ -34,9 +37,6 @@ f.close()
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
 pallete = []
-f = open("blocks.json", "r")
-BLOCKS = json.loads(f.read())
-f.close()
 pos = 0
 for id in BLOCKS:
 	pallete.append({"color": BLOCKS[id]["color"], "id": id, "rect": pygame.Rect(CELLSIZE * pos, 0, CELLSIZE, CELLSIZE)})
