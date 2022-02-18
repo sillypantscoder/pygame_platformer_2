@@ -25,7 +25,7 @@ WORLD = None
 CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
-rawStyleItems = zipHelpers.extract_zip("default.zip").items
+rawStyleItems = zipHelpers.extract_zip("style_env.zip").items
 BLOCKS = json.loads(rawStyleItems["blocks.json"].decode("UTF-8"))
 
 screen = pygame.display.set_mode([500, 560])
