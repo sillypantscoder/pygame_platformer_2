@@ -23,4 +23,6 @@ for filename in rawExtension:
 rawNew.writetofile("style_env.zip")
 
 if "--remove-extension" in sys.argv:
-	zipHelpers.InMemoryZip().writetofile("extension.zip")
+	x = zipHelpers.InMemoryZip()
+	x.append("msg.txt", "No extension installed")
+	x.writetofile("extension.zip")
