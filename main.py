@@ -150,7 +150,7 @@ def explosion(cx, cy, rad):
 			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue
 			if BLOCKS[WORLD[x][y]]["collision"] == "explode":
 				more.append([x, y])
-			elif BLOCKS[WORLD[x][y]] == "fall":
+			elif BLOCKS[WORLD[x][y]]["collision"] == "fall":
 				MovingBlock(x * CELLSIZE, y * CELLSIZE)
 			WORLD[x][y] = BLOCKS[WORLD[x][y]]["explosion"]
 	for t in [player, *things]:
@@ -230,11 +230,11 @@ class Entity:
 					self.standing = True
 					self.canjump = True
 					pygame.draw.line(totalScreen, (0, 255, 0), platform.topleft, platform.topright, 5)
-					if WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)] == "sand":
+					if BLOCKS[WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)]]["collision"] == "fall":
 						# Standing on sand!
 						fall = False
 						try:
-							if WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE) + 1] == "air":
+							if BLOCKS[WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE) + 1]]["collision"] == "empty":
 								fall = True
 						except:
 							fall = True

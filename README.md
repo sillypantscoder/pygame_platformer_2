@@ -25,7 +25,7 @@ To play the game, run "python3 main.py" in the terminal. Then click on "Go" and 
 ### Danger items
 - If you have 10 or more danger items, you can press space at any time to cause an explosions at your space. The explosion is just like any other explosion and will create a big danger icon and possibly another danger item.
 - If you have 15 or more danger items, you can click anywhere on the screen to immediately spawn a spawner there. This is a good way to get danger items and score items.
-- If you press Z, you can use 5 danger items
+- If you press Z, you can use 5 danger items to randomly create a spawner somewhere across the map.
 
 ### Allays
 - Press the W key to create an Allay Spawner. The Allay Spawner will spawn lots of Allays.
