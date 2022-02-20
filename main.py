@@ -138,8 +138,12 @@ def debugmsg(msg):
 
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
 
+def insideBoard(x, y):
+	if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: return False
+	return True
+
 def explosion(cx, cy, rad):
-	if cx < 0 or cy < 0 or cx >= BOARDSIZE[0] or cy >= BOARDSIZE[1]: return
+	if not insideBoard(cx, cy): return
 	WORLD[cx][cy] = BLOCKS[WORLD[cx][cy]]["explosion"]
 	debugmsg(f"explosion at ({cx},{cy}) rad={rad}")
 	Particle((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
@@ -147,7 +151,7 @@ def explosion(cx, cy, rad):
 	for x in range(cx - rad, cx + rad + 1):
 		for y in range(cy - rad, cy + rad + 1):
 			#if ((x - cx) ** 2) + ((y - cy) ** 2) > (rad ** 2): continue
-			if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: continue
+			if not insideBoard(x, y): continue
 			if BLOCKS[WORLD[x][y]]["collision"] == "explode":
 				more.append([x, y])
 			elif BLOCKS[WORLD[x][y]]["collision"] == "fall":
@@ -197,12 +201,14 @@ class Entity:
 		self.y += self.vy
 		touching_platforms = []
 		# World
-		for x in range(len(WORLD)):
-			for y in range(len(WORLD[x])):
+		for x in range(round(self.x / CELLSIZE) - 2, round(self.x / CELLSIZE) + 2):
+			for y in range(round(self.y / CELLSIZE) - 2, round(self.y / CELLSIZE) + 2):
+				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
+				if not insideBoard(x, y): continue
+				if "--show-ticked-cells" in sys.argv: pygame.draw.rect(totalScreen, (0, 0, 200), cellrect, 5)
 				cell = WORLD[x][y]
 				if not cell in BLOCKS:
 					continue
-				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
 				if BLOCKS[cell]["collision"] in ["solid", "fall"]:
 					if pygame.Rect(self.x, self.y + 1, 10, 10).colliderect(cellrect):
 						touching_platforms.append(cellrect)
