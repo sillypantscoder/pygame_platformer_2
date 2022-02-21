@@ -471,12 +471,14 @@ while True:
 	totalScreen.fill(WHITE)
 	# Board
 	sets = []
-	for x in range(len(WORLD)):
-			for y in range(len(WORLD[x])):
+	for x in range(round(player.x / CELLSIZE) - 7, round(player.x / CELLSIZE) + 7):
+			for y in range(round(player.y / CELLSIZE) - 7, round(player.y / CELLSIZE) + 7):
+				if not insideBoard(x, y): continue
 				cell = WORLD[x][y]
 				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
 				if cell in BLOCKS:
-					pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
+					if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
+					else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
 					if tickingrefresh == 0:
 						if BLOCKS[cell]["fluid"] == "source":
 							# Fall down
