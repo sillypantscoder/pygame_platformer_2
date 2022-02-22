@@ -440,6 +440,7 @@ tickingrefresh = 10
 tickingcount = 0
 fpscalc = datetime.datetime.now()
 fps = "???"
+minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
 while True:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
@@ -527,6 +528,14 @@ while True:
 				t.ticking = True
 				tickingcount += 1
 			else: t.ticking = False
+		for x in range(len(WORLD)):
+			for y in range(len(WORLD[x])):
+				cell = WORLD[x][y]
+				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
+				if cell in BLOCKS:
+					if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
+					else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
+		minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
 	# Spawning
 	if random.random() < 0.001:
 		Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
@@ -554,7 +563,7 @@ while True:
 		fpscalc = datetime.datetime.now()
 	# Debug info
 	pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
-	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
+	screen.blit(minimap, (0, 0))
 	w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
 	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
