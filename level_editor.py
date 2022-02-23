@@ -3,7 +3,6 @@ import pygame
 import json
 import zipHelpers
 
-pygame.init()
 pygame.font.init()
 
 playerpos = [100, 0]

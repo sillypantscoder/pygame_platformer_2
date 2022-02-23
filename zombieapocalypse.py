@@ -10,7 +10,6 @@ import zipHelpers
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-pygame.init()
 pygame.font.init()
 
 BOARDSIZE = [30, 30]
