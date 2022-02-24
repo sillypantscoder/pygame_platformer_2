@@ -5,7 +5,7 @@ import os
 if "--remove-extension" in sys.argv:
 	rawExtension = zipHelpers.extract_zip("extension.zip").items
 	x = zipHelpers.InMemoryZip()
-	x.append("msg.txt", "No extension installed")
+	x.append("meta.txt", "(No extension installed)\n")
 	x.writetofile("extension.zip")
 	print("Removed extension:", rawExtension["meta.txt"].decode("UTF-8")[:-1])
 if "--add-extension" in sys.argv:
@@ -33,3 +33,5 @@ for filename in rawExtension:
 		rawNew.append(filename, rawExtension[filename])
 
 rawNew.writetofile("style_env.zip")
+
+print("Using extension:", rawExtension["meta.txt"].decode("UTF-8")[:-1])
