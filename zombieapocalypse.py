@@ -305,8 +305,6 @@ class Player(Entity):
 				else: self.vx -= 1
 				# If the target is not more than half a block above me, jump.
 				if target.y - self.y >= -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
-				# Make Allays do the work for me, because who cares about them.
-				Allay(self.x, self.y)
 			else:
 				if self.canjump and random.random() < 0.06: self.vy = -3.1
 				if self.memory["direction"]:
