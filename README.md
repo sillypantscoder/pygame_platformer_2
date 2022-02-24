@@ -36,8 +36,9 @@ Ok, maybe I should explain "zombieapocalypse.py".
 
 - To run the game in Zombie Apocalypse Mode, run "python3 zombieapocalypse.py" instead of "python3 main.py".
 - New "Auto Apocalypse" option: When enabled, a bot plays the game instead of you.
-- Always uses the "Grid" generator.
-- Monsters spawn frequently around the map. When they despawn, they drop ScoreItems.
+- Always uses its own customized generator, similar to the "Grid" generator.
+- There are no Danger or Score items, just Gem items. Explosions drop Gem items instead of danger items.
+- Monsters spawn frequently around the map. When they despawn, they drop Gem items.
 - Monsters try to pathfind towards you. If they touch you, your health decreases.
 - If your health runs out, you die.
 - You can't click or press Z to spawn Spawners.

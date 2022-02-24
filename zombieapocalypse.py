@@ -147,7 +147,7 @@ def explosion(cx, cy, rad):
 	for l in more:
 		explosion(*l, 2)
 	if random.random() < 0.3:
-		ScoreItem((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
+		Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
 
 class Entity:
 	color = (0, 0, 0)
@@ -286,7 +286,7 @@ class Player(Entity):
 			targetdist = 1000
 			for t in things:
 				dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
-				# Find the closest Item, but if a ScoreItem is available, go for that instead.
+				# Find the closest Item or Monster within screen size.
 				if (dist < targetdist) and (isinstance(t, Item) or (isinstance(t, Monster) and dist < CELLSIZE * 5)):
 					target = t
 					targetdist = dist
@@ -342,11 +342,11 @@ class Monster(Entity):
 		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
 	def despawn(self):
 		for i in range(random.choice([0, 1, 2, 3])):
-			self.drop(ScoreItem)
+			self.drop(Item)
 
 class Item(Entity):
 	def initmemory(self):
-		self.memory = {"img": "danger", "img_surface": None}
+		self.memory = {"img": "gem", "img_surface": None}
 	def draw(self, playerx, playery):
 		#size = 5 + (self.memory["stacksize"] * 5)
 		size = 11
@@ -361,10 +361,6 @@ class Item(Entity):
 				gainitem(self.memory["img"])
 	def opt_ai_calc(self):
 		if self.vy >= 0.5: self.vy = 0.5
-
-class ScoreItem(Item):
-	def initmemory(self):
-		self.memory = {"img": "score", "img_surface": None, "stacksize": 1}
 
 class Particle(Entity):
 	def initmemory(self):
@@ -448,7 +444,7 @@ def gainitem(item):
 things = []
 player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
 items = {
-	"score": 0
+	"gem": 0
 }
 tickingrefresh = 10
 tickingcount = 0
@@ -544,7 +540,7 @@ while True:
 	for s in sets:
 		WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
 	# Spawning
-	if random.random() < (0.01 * items["score"]) + 0.05:
+	if random.random() < (0.01 * items["gem"]) + 0.05:
 		pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 		Monster(*pos)
 		Particle(*pos)
@@ -573,7 +569,7 @@ while True:
 	# Debug info
 	pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
 	screen.blit(minimap, (0, 0))
-	w = FONT.render(f"Score: {str(items['score'])}, HP: {str(player.memory['health'])}", True, BLACK)
+	w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
 	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
 	screen.blit(w, (0, BOARDSIZE[1]))
