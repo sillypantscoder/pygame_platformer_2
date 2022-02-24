@@ -430,7 +430,7 @@ def endgame(player):
 			if event.type == pygame.MOUSEBUTTONUP:
 				player.despawn()
 		screen.fill(WHITE)
-		w = FONT.render(f"Score: {str(items['score'])}", True, BLACK)
+		w = FONT.render(f"Score: {str(items['gem'])}", True, BLACK)
 		screen.blit(w, (CELLSIZE, CELLSIZE))
 		screen.blit(wc, (CELLSIZE, CELLSIZE + w.get_height() + 10))
 		pygame.display.flip()
