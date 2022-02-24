@@ -2,6 +2,8 @@ import random
 import pygame
 import json
 import zipHelpers
+from basics import *
+from os import system
 
 pygame.font.init()
 
@@ -9,17 +11,7 @@ playerpos = [100, 0]
 selectedx = 0
 selectedy = 0
 
-BOARDSIZE = [30, 30]
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GRAY = (180, 180, 180)
-LIGHTRED = (255, 180, 180)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BROWN = (28, 2, 0)
-TAN = (255, 241, 171)
 WORLD = [[random.choice(["air", "stone"]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
-CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
 rawStyleItems = zipHelpers.extract_zip("style_env.zip").items
@@ -34,6 +26,24 @@ f.close()
 # PLAYING -------------------------------------------------
 
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
+
+def bytesToSurface(b: bytes):
+	f = open("texture.png", "wb")
+	f.write(b)
+	f.close()
+	s = pygame.image.load("texture.png")
+	system("rm texture.png")
+	return s
+
+textures = {}
+for filename in rawStyleItems:
+	if "textures/" in filename:
+		if filename[-1] != "/":
+			try:
+				textures[filename[9:]] = bytesToSurface(rawStyleItems[filename])
+			except:
+				print(filename)
+				exit(1)
 
 pallete = []
 pos = 0
@@ -75,8 +85,10 @@ while running:
 	for x in range(len(WORLD)):
 		for y in range(len(WORLD[x])):
 			cell = WORLD[x][y]
+			cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
 			if cell in BLOCKS:
-				pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE))
+				if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
+				else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
 			if pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE).collidepoint(pos):
 				selectedx = x
 				selectedy = y
@@ -88,7 +100,9 @@ while running:
 	screen.blit(totalScreen, (250 - playerpos[0], 250 - playerpos[1]))
 	# Pallete
 	for o in pallete:
-		pygame.draw.rect(screen, o["color"], o["rect"])
+		if o["color"] == False:
+			screen.blit(textures["block/" + o["id"] + ".png"], o["rect"].topleft)
+		else: pygame.draw.rect(screen, o["color"], o["rect"])
 	pygame.display.flip()
 	c.tick(60)
 pygame.quit()

@@ -6,22 +6,14 @@ import json
 import math
 import datetime
 import zipHelpers
+from basics import *
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 pygame.font.init()
 
-BOARDSIZE = [30, 30]
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GRAY = (180, 180, 180)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BROWN = (28, 2, 0)
-TAN = (255, 241, 171)
 WORLD = None
-CELLSIZE = 50
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
 rawStyleItems = zipHelpers.extract_zip("style_env.zip").items
@@ -354,7 +346,7 @@ class Monster(Entity):
 
 class Item(Entity):
 	def initmemory(self):
-		self.memory = {"img": "danger", "img_surface": None, "stacksize": 1}
+		self.memory = {"img": "danger", "img_surface": None}
 	def draw(self, playerx, playery):
 		#size = 5 + (self.memory["stacksize"] * 5)
 		size = 11
@@ -366,12 +358,7 @@ class Item(Entity):
 		for t in things:
 			if isinstance(t, Allay) and pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(t.x, t.y, 10, 10)):
 				self.die()
-				for i in range(self.memory["stacksize"]): gainitem(self.memory["img"])
-			if isinstance(t, Item) and not t == self:
-				if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(t.x, t.y, 10, 10)):
-					if t.memory["img"] == self.memory["img"]:
-						self.memory["stacksize"] += t.memory["stacksize"]
-						t.die()
+				gainitem(self.memory["img"])
 	def opt_ai_calc(self):
 		if self.vy >= 0.5: self.vy = 0.5
 
@@ -471,6 +458,7 @@ tickingrefresh = 10
 tickingcount = 0
 fpscalc = datetime.datetime.now()
 fps = "???"
+minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
 while True:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
@@ -503,42 +491,8 @@ while True:
 				if cell in BLOCKS:
 					if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
 					else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
-					if tickingrefresh == 0:
-						if BLOCKS[cell]["fluid"] == "source":
-							# Fall down
-							if y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
-								sets.append({"pos": (x, y + 1), "state": "flowing_" + cell})
-							elif y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
-								# Or flow left
-								if x - 1 > 0 and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
-									sets.append({"pos": (x - 1, y), "state": "flowing_" + cell})
-								# Or flow right
-								if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
-									sets.append({"pos": (x + 1, y), "state": "flowing_" + cell})
-						if BLOCKS[cell]["fluid"] == "flowing":
-							# Stop falling
-							sets.append({"pos": (x, y), "state": "air"})
-							if WORLD[x][y - 1] in [cell, cell[8:]] and y - 1 >= 0:
-								sets.append({"pos": (x, y), "state": cell})
-							if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] in [cell, cell[8:]]:
-								sets.append({"pos": (x, y), "state": cell})
-							if x - 1 > 0 and WORLD[x - 1][y] in [cell, cell[8:]]:
-								sets.append({"pos": (x, y), "state": cell})
-							# Fall down
-							if y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
-								sets.append({"pos": (x, y + 1), "state": cell})
-							elif y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
-								# Or flow left
-								if x - 1 > 0 and WORLD[x - 1][y] in BLOCKS and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
-									sets.append({"pos": (x - 1, y), "state": cell})
-								# Or flow right
-								if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
-									sets.append({"pos": (x + 1, y), "state": cell})
 				else:
 					pygame.draw.rect(totalScreen, (255, 0, 255), cellrect)
-	# Fluids and scheduled ticks
-	for s in sets:
-		WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
 	# Ticking
 	if tickingrefresh > 0:
 		tickingrefresh -= 1
@@ -551,6 +505,48 @@ while True:
 				t.ticking = True
 				tickingcount += 1
 			else: t.ticking = False
+		for x in range(len(WORLD)):
+			for y in range(len(WORLD[x])):
+				cell = WORLD[x][y]
+				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
+				if cell in BLOCKS:
+					if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
+					else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
+					# FLUIDS
+					if BLOCKS[cell]["fluid"] == "source":
+						# Fall down
+						if y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
+							sets.append({"pos": (x, y + 1), "state": "flowing_" + cell})
+						elif y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
+							# Or flow left
+							if x - 1 > 0 and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
+								sets.append({"pos": (x - 1, y), "state": "flowing_" + cell})
+							# Or flow right
+							if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
+								sets.append({"pos": (x + 1, y), "state": "flowing_" + cell})
+					if BLOCKS[cell]["fluid"] == "flowing":
+						# Stop falling
+						sets.append({"pos": (x, y), "state": "air"})
+						if WORLD[x][y - 1] in [cell, cell[8:]] and y - 1 >= 0:
+							sets.append({"pos": (x, y), "state": cell})
+						if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] in [cell, cell[8:]]:
+							sets.append({"pos": (x, y), "state": cell})
+						if x - 1 > 0 and WORLD[x - 1][y] in [cell, cell[8:]]:
+							sets.append({"pos": (x, y), "state": cell})
+						# Fall down
+						if y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
+							sets.append({"pos": (x, y + 1), "state": cell})
+						elif y + 1 < BOARDSIZE[1] and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
+							# Or flow left
+							if x - 1 > 0 and WORLD[x - 1][y] in BLOCKS and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
+								sets.append({"pos": (x - 1, y), "state": cell})
+							# Or flow right
+							if x + 1 < BOARDSIZE[0] and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
+								sets.append({"pos": (x + 1, y), "state": cell})
+		minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
+	# Fluids and scheduled ticks
+	for s in sets:
+		WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
 	# Spawning
 	if random.random() < (0.01 * items["score"]) + 0.05:
 		pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
@@ -580,7 +576,7 @@ while True:
 		fpscalc = datetime.datetime.now()
 	# Debug info
 	pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
-	screen.blit(pygame.transform.scale(totalScreen, BOARDSIZE), (0, 0))
+	screen.blit(minimap, (0, 0))
 	w = FONT.render(f"Score: {str(items['score'])}, HP: {str(player.memory['health'])}", True, BLACK)
 	screen.blit(w, (BOARDSIZE[0], 0))
 	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
