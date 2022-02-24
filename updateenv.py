@@ -1,11 +1,20 @@
 import zipHelpers
 import sys
+import os
 
 if "--remove-extension" in sys.argv:
+	rawExtension = zipHelpers.extract_zip("extension.zip").items
 	x = zipHelpers.InMemoryZip()
 	x.append("msg.txt", "No extension installed")
 	x.writetofile("extension.zip")
-	print("Removed extension")
+	print("Removed extension:", rawExtension["meta.txt"].decode("UTF-8")[:-1])
+if "--add-extension" in sys.argv:
+	extension = sys.argv[sys.argv.index("--add-extension") + 1] + ".zip"
+	extensions = os.listdir("extensions")
+	if extension in extensions:
+		os.system("cp extensions/" + extension + " extension.zip")
+		rawExtension = zipHelpers.extract_zip("extension.zip").items
+		print("Added extension:", rawExtension["meta.txt"].decode("UTF-8")[:-1])
 
 rawDefault = zipHelpers.extract_zip("default.zip").items
 rawExtension = zipHelpers.extract_zip("extension.zip").items

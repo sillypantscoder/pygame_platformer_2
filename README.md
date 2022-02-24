@@ -47,7 +47,7 @@ Ok, maybe I should explain "zombieapocalypse.py".
 New: Extensions!!!
 
 - Extensions can add, remove, or modify blocks, generators, and textures.
-- Install an extension by replacing "extension.zip" with the extension package.
-- Then run "python3 updateenv.py" in the terminal to update the styles to use the extension.
+- Install an extension by adding the extension package to the "extensions" folder.
+- Then run "python3 updateenv.py --add-extension extensionname" in the terminal to update the styles to use the extension.
 - Now, you can use the normal game, Zombie Apocalypse Mode, and the level editor with the extension.
 - To disable the extension, run "python3 updateenv.py --remove-extension" in the Terminal. You should now be all good to go!
