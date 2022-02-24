@@ -1,15 +1,15 @@
 import zipHelpers
 import sys
-import os
 
-os.system("rm style_env.zip")
+if "--remove-extension" in sys.argv:
+	x = zipHelpers.InMemoryZip()
+	x.append("msg.txt", "No extension installed")
+	x.writetofile("extension.zip")
+	print("Removed extension")
 
 rawDefault = zipHelpers.extract_zip("default.zip").items
 rawExtension = zipHelpers.extract_zip("extension.zip").items
 rawNew = zipHelpers.InMemoryZip()
-
-if "--remove-extension" in sys.argv:
-	rawExtension = {}
 
 for filename in rawDefault:
 	if filename[-1] == "/": continue
@@ -24,8 +24,3 @@ for filename in rawExtension:
 		rawNew.append(filename, rawExtension[filename])
 
 rawNew.writetofile("style_env.zip")
-
-if "--remove-extension" in sys.argv:
-	x = zipHelpers.InMemoryZip()
-	x.append("msg.txt", "No extension installed")
-	x.writetofile("extension.zip")
