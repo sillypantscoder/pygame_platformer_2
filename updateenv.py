@@ -1,5 +1,8 @@
 import zipHelpers
 import sys
+import os
+
+os.system("rm style_env.zip")
 
 rawDefault = zipHelpers.extract_zip("default.zip").items
 rawExtension = zipHelpers.extract_zip("extension.zip").items

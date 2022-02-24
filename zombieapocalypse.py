@@ -305,6 +305,8 @@ class Player(Entity):
 				else: self.vx -= 1
 				# If the target is not more than half a block above me, jump.
 				if target.y - self.y >= -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
+				# Make Allays do the work for me, because who cares about them.
+				Allay(self.x, self.y)
 			else:
 				if self.canjump and random.random() < 0.06: self.vy = -3.1
 				if self.memory["direction"]:
@@ -410,9 +412,8 @@ class Allay(Entity):
 		targetdist = 1000
 		for t in things:
 			dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
-			# Find the closest Item, but if a ScoreItem is available, go for that instead.
-			# 30% chance of targeting a different Item.
-			if (dist < targetdist or random.random()<0.3 or isinstance(t, ScoreItem)) and isinstance(t, Item):
+			# Find the closest Item.
+			if dist < targetdist and isinstance(t, Item):
 				target = t
 				targetdist = dist
 		if not target: return
@@ -422,11 +423,8 @@ class Allay(Entity):
 		else: self.vx += 1
 		# If the target is more than half a block above me, jump.
 		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
-
-class AllaySpawner(Entity):
-	color = (0, 100, 150)
-	def tickmove(self):
-		if random.random() < 0.1: Allay(self.x, self.y)
+		# 1% chance kill myself.
+		if random.random() < 0.01: self.die()
 
 def endgame(player):
 	wc = FONT.render("Click anywhere to exit", True, BLACK)
@@ -460,6 +458,7 @@ fpscalc = datetime.datetime.now()
 fps = "???"
 minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
 while True:
+	keys = pygame.key.get_pressed()
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			player.despawn()
@@ -467,7 +466,6 @@ while True:
 		if event.type == pygame.MOUSEBUTTONUP:
 			pos = pygame.mouse.get_pos()
 		if event.type == pygame.KEYDOWN:
-			keys = pygame.key.get_pressed()
 			if keys[pygame.K_SPACE]:
 				for zzz in range(20):
 					pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
@@ -476,8 +474,8 @@ while True:
 				for t in things:
 					if isinstance(t, (Item, Monster, Particle)):
 						t.die()
-			if keys[pygame.K_w]:
-				AllaySpawner(player.x, player.y)
+	if keys[pygame.K_w]:
+		Allay(player.x, player.y)
 	# DRAWING ------------
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
