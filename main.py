@@ -135,6 +135,7 @@ def insideBoard(x, y):
 
 def explosion(cx, cy, rad):
 	if not insideBoard(cx, cy): return
+	if WORLD[cx][cy] not in BLOCKS: return
 	WORLD[cx][cy] = BLOCKS[WORLD[cx][cy]]["explosion"]
 	debugmsg(f"explosion at ({cx},{cy}) rad={rad}")
 	Particle((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
@@ -143,10 +144,11 @@ def explosion(cx, cy, rad):
 		for y in range(cy - rad, cy + rad + 1):
 			#if ((x - cx) ** 2) + ((y - cy) ** 2) > (rad ** 2): continue
 			if not insideBoard(x, y): continue
+			if WORLD[x][y] not in BLOCKS: continue
 			if BLOCKS[WORLD[x][y]]["collision"] == "explode":
 				more.append([x, y])
 			elif BLOCKS[WORLD[x][y]]["collision"] == "fall":
-				MovingBlock(x * CELLSIZE, y * CELLSIZE)
+				MovingBlock(x * CELLSIZE, y * CELLSIZE).memory["block"] = WORLD[x][y]
 			WORLD[x][y] = BLOCKS[WORLD[x][y]]["explosion"]
 	for t in [player, *things]:
 		dx = t.x - ((cx + 0.5) * CELLSIZE)
@@ -198,8 +200,7 @@ class Entity:
 				if not insideBoard(x, y): continue
 				if "--show-ticked-cells" in sys.argv: pygame.draw.rect(totalScreen, (0, 0, 200), cellrect, 5)
 				cell = WORLD[x][y]
-				if not cell in BLOCKS:
-					continue
+				if not cell in BLOCKS: continue
 				if BLOCKS[cell]["collision"] in ["solid", "fall"]:
 					if pygame.Rect(self.x, self.y + 1, 10, 10).colliderect(cellrect):
 						touching_platforms.append(cellrect)
@@ -237,9 +238,10 @@ class Entity:
 							fall = True
 							errormsg(self, "jumped on falling block at bottom of world")
 						if fall:
-							WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)] = "air"
 							s = MovingBlock(*platform.topleft)
 							s.vy = 3
+							s.memory["block"] = WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)]
+							WORLD[math.floor(platform.left / CELLSIZE)][math.floor(platform.top / CELLSIZE)] = "air"
 				else:
 					if platform.left - thisEntity.right > -5:
 						# Entity is bumping into left side of platform!
@@ -256,8 +258,7 @@ class Entity:
 						pygame.draw.line(totalScreen, (0, 255, 0), platform.bottomleft, platform.bottomright, 5)
 		# Respawning, Crashing, and Moving
 		if self.y > BOARDSIZE[1] * CELLSIZE:
-			self.x = 100
-			self.y = 0
+			self.die()
 		if self.vx > 20 or self.vy > 20 or self.vx < -20 or self.vy < -20:
 			self.vx = 0
 			self.vy = 0
@@ -295,6 +296,9 @@ class Player(Entity):
 			self.vx += 1
 		if keys[pygame.K_UP] and self.canjump:
 			self.vy = -3.1
+	def die(self):
+		self.x = 100
+		self.y = 0
 	def despawn(self):
 		pygame.quit()
 		exit()
@@ -373,6 +377,8 @@ class Particle(Entity):
 
 class MovingBlock(Entity):
 	color = TAN
+	def initmemory(self):
+		self.memory = {"block": "sand"}
 	def tickmove(self):
 		if self.standing:
 			self.y -= CELLSIZE / 2
@@ -381,7 +387,7 @@ class MovingBlock(Entity):
 	def despawn(self):
 		b = self.getBlock()
 		try:
-			WORLD[b[0]][b[1]] = "sand"
+			WORLD[b[0]][b[1]] = self.memory["block"]
 		except:
 			errormsg(self, "attempted to re-place block at: " + str(b[0]) + ", " + str(b[1]))
 
@@ -468,6 +474,8 @@ while True:
 					else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
 				else:
 					pygame.draw.rect(totalScreen, (255, 0, 255), cellrect)
+					pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.topleft, CELLSIZE / 2, CELLSIZE / 2))
+					pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.center, CELLSIZE / 2, CELLSIZE / 2))
 	# Ticking
 	if tickingrefresh > 0:
 		tickingrefresh -= 1
