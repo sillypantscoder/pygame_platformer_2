@@ -498,14 +498,14 @@ while True:
 					# FLUIDS
 					if BLOCKS[cell]["fluid"] == "source":
 						# Fall down
-						if insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
+						if insideBoard(x, y + 1) and (WORLD[x][y + 1] in BLOCKS) and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
 							sets.append({"pos": (x, y + 1), "state": "flowing_" + cell})
-						elif insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
+						elif insideBoard(x, y + 1) and (WORLD[x][y + 1] in BLOCKS) and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
 							# Or flow left
-							if insideBoard(x - 1, y) and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
+							if insideBoard(x - 1, y) and (WORLD[x - 1][y] in BLOCKS) and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
 								sets.append({"pos": (x - 1, y), "state": "flowing_" + cell})
 							# Or flow right
-							if insideBoard(x + 1, y) and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
+							if insideBoard(x + 1, y) and (WORLD[x + 1][y] in BLOCKS) and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
 								sets.append({"pos": (x + 1, y), "state": "flowing_" + cell})
 					if BLOCKS[cell]["fluid"] == "flowing":
 						# Stop falling
