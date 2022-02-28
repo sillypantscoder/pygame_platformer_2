@@ -11,13 +11,20 @@ playerpos = [100, 0]
 selectedx = 0
 selectedy = 0
 
+rawStyleItems = zipHelpers.extract_zip("style_env.zip").items
+BLOCKS = json.loads(rawStyleItems["blocks.json"].decode("UTF-8"))
+pallete = []
+pos = 0
+for id in BLOCKS:
+	pallete.append({"color": BLOCKS[id]["color"], "id": id, "rect": pygame.Rect(CELLSIZE * pos, 0, CELLSIZE, CELLSIZE)})
+	pos += 1
+selectedbrush = 0
+
 WORLD = [[random.choice(["air", "stone"]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
-rawStyleItems = zipHelpers.extract_zip("style_env.zip").items
-BLOCKS = json.loads(rawStyleItems["blocks.json"].decode("UTF-8"))
 
-screen = pygame.display.set_mode([500, 500 + CELLSIZE])
+screen = pygame.display.set_mode([min(max(500, len(pallete) * CELLSIZE), 2000), 500 + CELLSIZE])
 
 f = open("world.json", "r")
 WORLD = json.loads(f.read())
@@ -26,6 +33,10 @@ f.close()
 # PLAYING -------------------------------------------------
 
 totalScreen = pygame.Surface((BOARDSIZE[0] * CELLSIZE, BOARDSIZE[1] * CELLSIZE))
+
+def insideBoard(x, y):
+	if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: return False
+	return True
 
 def bytesToSurface(b: bytes):
 	f = open("texture.png", "wb")
@@ -44,13 +55,6 @@ for filename in rawStyleItems:
 			except:
 				print(filename)
 				exit(1)
-
-pallete = []
-pos = 0
-for id in BLOCKS:
-	pallete.append({"color": BLOCKS[id]["color"], "id": id, "rect": pygame.Rect(CELLSIZE * pos, 0, CELLSIZE, CELLSIZE)})
-	pos += 1
-selectedbrush = 0
 
 running = True
 while running:
@@ -82,8 +86,10 @@ while running:
 	screen.fill(GRAY)
 	totalScreen.fill(WHITE)
 	# World
-	for x in range(len(WORLD)):
-		for y in range(len(WORLD[x])):
+	renderdistance = 6
+	for x in range(round(playerpos[0] / CELLSIZE) - renderdistance, round(playerpos[0] / CELLSIZE) + renderdistance):
+		for y in range(round(playerpos[1] / CELLSIZE) - renderdistance, round(playerpos[1] / CELLSIZE) + renderdistance):
+			if not insideBoard(x, y): continue;
 			cell = WORLD[x][y]
 			cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
 			if cell in BLOCKS:
@@ -98,6 +104,7 @@ while running:
 	pygame.draw.rect(totalScreen, RED, pygame.Rect(*playerpos, 10, 10))
 	# FLIP -----------------
 	screen.blit(totalScreen, (250 - playerpos[0], 250 - playerpos[1]))
+	screen.blit(FONT.render(str(WORLD[selectedx][selectedy]), True, BLACK), (0, CELLSIZE))
 	# Pallete
 	for o in pallete:
 		if o["color"] == False:

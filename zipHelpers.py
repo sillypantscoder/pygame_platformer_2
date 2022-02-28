@@ -5,7 +5,9 @@ class InMemoryZip(object):
 	def __init__(self, items = {}):
 		# Create the in-memory file-like object for working w/IMZ
 		self.in_memory_zip = BytesIO()
-		self.items = items
+		self.items = {}
+		for i in items:
+			self.append(i, items[i])
 	# Just zip it, zip it
 	def append(self, filename_in_zip, file_contents):
 		# Record this file.
