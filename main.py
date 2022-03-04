@@ -25,80 +25,86 @@ screen = pygame.display.set_mode([500, 560])
 
 wr = True
 alwaystick = True
-
-running = True
-while running:
-	screen.fill(WHITE)
-	if wr:
-		w = FONT.render("Generate new world", True, BLACK)
-	else:
-		w = FONT.render("Load world file", True, BLACK)
-	screen.blit(w, (0, 0))
-	wy = w.get_height()
-	g = FONT.render("Go >", True, GREEN)
-	screen.blit(g, (0, wy))
-	gy = g.get_height() + wy
-	# Always ticking?
-	if alwaystick:
-		a = FONT.render("Always tick entities: Y", True, BLACK)
-	else:
-		a = FONT.render("Always tick entities: N", True, BLACK)
-	screen.blit(a, (0, wy + gy))
-	ay = a.get_height() + wy + gy
-	# Events
-	for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.quit(); exit()
-				# User clicked close button
-			if event.type == pygame.MOUSEBUTTONUP:
-				pos = pygame.mouse.get_pos()
-				if pos[1] < wy:
-					wr = not wr
-				elif pos[1] < gy:
-					running = False
-				elif pos[1] < ay:
-					alwaystick = not alwaystick
-	c.tick(60)
-	pygame.display.flip()
+def WORLDSELECTION():
+	global wr
+	global alwaystick
+	running = True
+	while running:
+		screen.fill(WHITE)
+		if wr:
+			w = FONT.render("Generate new world", True, BLACK)
+		else:
+			w = FONT.render("Load world file", True, BLACK)
+		screen.blit(w, (0, 0))
+		wy = w.get_height()
+		g = FONT.render("Go >", True, GREEN)
+		screen.blit(g, (0, wy))
+		gy = g.get_height() + wy
+		# Always ticking?
+		if alwaystick:
+			a = FONT.render("Always tick entities: Y", True, BLACK)
+		else:
+			a = FONT.render("Always tick entities: N", True, BLACK)
+		screen.blit(a, (0, wy + gy))
+		ay = a.get_height() + wy + gy
+		# Events
+		for event in pygame.event.get():
+				if event.type == pygame.QUIT:
+					pygame.quit(); exit()
+					# User clicked close button
+				if event.type == pygame.MOUSEBUTTONUP:
+					pos = pygame.mouse.get_pos()
+					if pos[1] < wy:
+						wr = not wr
+					elif pos[1] < gy:
+						running = False
+					elif pos[1] < ay:
+						alwaystick = not alwaystick
+		c.tick(60)
+		pygame.display.flip()
 
 # GENERATOR SELECTION
 
-items = {}
-itemNames = []
-for filename in rawStyleItems:
-	if "generators/" in filename:
-		if filename != "generators/":
-			items[filename[11:]] = rawStyleItems[filename].decode("UTF-8")
-			itemNames.append(filename[11:])
-running = wr
-while running:
-	screen.fill(WHITE)
-	itr = 0
-	for i in items:
-		w = FONT.render(i, True, BLACK)
-		screen.blit(w, (0, itr * 40))
-		itr += 1
-	for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.quit(); exit()
-				# User clicked close button
-			if event.type == pygame.MOUSEBUTTONUP:
-				pos = pygame.mouse.get_pos()
-				y = math.floor(pos[1] / 40)
-				wr = itemNames[y]
-				running = False
-	c.tick(60)
-	pygame.display.flip()
+WORLD = []
+def GENERATORSELECTION():
+	global wr
+	global WORLD
+	items = {}
+	itemNames = []
+	for filename in rawStyleItems:
+		if "generators/" in filename:
+			if filename != "generators/":
+				items[filename[11:]] = rawStyleItems[filename].decode("UTF-8")
+				itemNames.append(filename[11:])
+	running = wr
+	while running:
+		screen.fill(WHITE)
+		itr = 0
+		for i in items:
+			w = FONT.render(i, True, BLACK)
+			screen.blit(w, (0, itr * 40))
+			itr += 1
+		for event in pygame.event.get():
+				if event.type == pygame.QUIT:
+					pygame.quit(); exit()
+					# User clicked close button
+				if event.type == pygame.MOUSEBUTTONUP:
+					pos = pygame.mouse.get_pos()
+					y = math.floor(pos[1] / 40)
+					wr = itemNames[y]
+					running = False
+		c.tick(60)
+		pygame.display.flip()
 
-if wr:
-	f = open("generator.py", "w")
-	f.write(items[wr])
+	if wr:
+		f = open("generator.py", "w")
+		f.write(items[wr])
+		f.close()
+		system("python3 generator.py")
+		system("rm generator.py")
+	f = open("world.json", "r")
+	WORLD = json.loads(f.read())
 	f.close()
-	system("python3 generator.py")
-	system("rm generator.py")
-f = open("world.json", "r")
-WORLD = json.loads(f.read())
-f.close()
 
 # PLAYING -------------------------------------------------
 
@@ -428,140 +434,150 @@ items = {
 	"danger": 0,
 	"score": 0
 }
-tickingrefresh = 10
-tickingcount = 0
-fpscalc = datetime.datetime.now()
-fps = "???"
-minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
-while True:
-	for event in pygame.event.get():
-		if event.type == pygame.QUIT:
-			player.despawn()
-			# User clicked close button
-		if event.type == pygame.MOUSEBUTTONUP:
-			pos = pygame.mouse.get_pos()
-			if items["danger"] >= 15:
-				items["danger"] -= 15
-				Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250))
-		if event.type == pygame.KEYDOWN:
+def PLAYING():
+	global things
+	global player
+	global items
+	tickingrefresh = 10
+	tickingcount = 0
+	fpscalc = datetime.datetime.now()
+	fps = "???"
+	minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
+	while True:
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				player.despawn()
+				# User clicked close button
+			if event.type == pygame.MOUSEBUTTONUP:
+				pos = pygame.mouse.get_pos()
+				if items["danger"] >= 15:
+					items["danger"] -= 15
+					Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250))
+			if event.type == pygame.KEYDOWN:
+				keys = pygame.key.get_pressed()
+				if keys[pygame.K_SPACE]:
+					if items["danger"] >= 10:
+						items["danger"] -= 10
+						player.createExplosion(2)
+				if keys[pygame.K_z]:
+					if items["danger"] >= 5:
+						items["danger"] -= 5
+						Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+				if keys[pygame.K_q]:
+					for t in things:
+						if isinstance(t, (Item, Monster, Spawner, Particle)) and not isinstance(t, ScoreItem):
+							t.die()
+				if keys[pygame.K_w]:
+					AllaySpawner(player.x, player.y)
+		# DRAWING ------------
+		screen.fill(GRAY)
+		totalScreen.fill(WHITE)
+		# Board
+		sets = []
+		for x in range(round(player.x / CELLSIZE) - 7, round(player.x / CELLSIZE) + 7):
+				for y in range(round(player.y / CELLSIZE) - 7, round(player.y / CELLSIZE) + 7):
+					if not insideBoard(x, y): continue
+					cell = WORLD[x][y]
+					cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
+					if cell in BLOCKS:
+						if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
+						else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
+					else:
+						pygame.draw.rect(totalScreen, (255, 0, 255), cellrect)
+						pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.topleft, CELLSIZE / 2, CELLSIZE / 2))
+						pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.center, CELLSIZE / 2, CELLSIZE / 2))
+		# Ticking
+		if tickingrefresh > 0:
+			tickingrefresh -= 1
+		else:
+			tickingcount = 0
+			tickingrefresh = 10
 			keys = pygame.key.get_pressed()
-			if keys[pygame.K_SPACE]:
-				if items["danger"] >= 10:
-					items["danger"] -= 10
-					player.createExplosion(2)
-			if keys[pygame.K_z]:
-				if items["danger"] >= 5:
-					items["danger"] -= 5
-					Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
-			if keys[pygame.K_q]:
-				for t in things:
-					if isinstance(t, (Item, Monster, Spawner, Particle)) and not isinstance(t, ScoreItem):
-						t.die()
-			if keys[pygame.K_w]:
-				AllaySpawner(player.x, player.y)
-	# DRAWING ------------
-	screen.fill(GRAY)
-	totalScreen.fill(WHITE)
-	# Board
-	sets = []
-	for x in range(round(player.x / CELLSIZE) - 7, round(player.x / CELLSIZE) + 7):
-			for y in range(round(player.y / CELLSIZE) - 7, round(player.y / CELLSIZE) + 7):
-				if not insideBoard(x, y): continue
-				cell = WORLD[x][y]
-				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
-				if cell in BLOCKS:
-					if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
-					else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
-				else:
-					pygame.draw.rect(totalScreen, (255, 0, 255), cellrect)
-					pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.topleft, CELLSIZE / 2, CELLSIZE / 2))
-					pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.center, CELLSIZE / 2, CELLSIZE / 2))
-	# Ticking
-	if tickingrefresh > 0:
-		tickingrefresh -= 1
-	else:
-		tickingcount = 0
-		tickingrefresh = 10
-		keys = pygame.key.get_pressed()
+			for t in things:
+				if (abs(t.x - player.x) < 250) and (abs(t.y - player.y) < 250) or keys[pygame.K_a] or alwaystick:
+					t.ticking = True
+					tickingcount += 1
+				else: t.ticking = False
+			for x in range(len(WORLD)):
+				for y in range(len(WORLD[x])):
+					cell = WORLD[x][y]
+					cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
+					if cell in BLOCKS:
+						if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
+						else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
+						# FLUIDS
+						if BLOCKS[cell]["fluid"] == "source":
+							# Fall down
+							if insideBoard(x, y + 1) and (WORLD[x][y + 1] in BLOCKS) and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
+								sets.append({"pos": (x, y + 1), "state": "flowing_" + cell})
+							elif insideBoard(x, y + 1) and (WORLD[x][y + 1] in BLOCKS) and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
+								# Or flow left
+								if insideBoard(x - 1, y) and (WORLD[x - 1][y] in BLOCKS) and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x - 1, y), "state": "flowing_" + cell})
+								# Or flow right
+								if insideBoard(x + 1, y) and (WORLD[x + 1][y] in BLOCKS) and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x + 1, y), "state": "flowing_" + cell})
+						if BLOCKS[cell]["fluid"] == "flowing":
+							# Stop falling
+							sets.append({"pos": (x, y), "state": "air"})
+							if WORLD[x][y - 1] in [cell, cell[8:]] and y - 1 >= 0:
+								sets.append({"pos": (x, y), "state": cell})
+							if insideBoard(x + 1, y) and WORLD[x + 1][y] in [cell, cell[8:]]:
+								sets.append({"pos": (x, y), "state": cell})
+							if insideBoard(x - 1, y) and WORLD[x - 1][y] in [cell, cell[8:]]:
+								sets.append({"pos": (x, y), "state": cell})
+							# Fall down
+							if insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
+								sets.append({"pos": (x, y + 1), "state": cell})
+							elif insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
+								# Or flow left
+								if insideBoard(x - 1, y) and WORLD[x - 1][y] in BLOCKS and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x - 1, y), "state": cell})
+								# Or flow right
+								if insideBoard(x + 1, y) and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x + 1, y), "state": cell})
+			minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
+		# Fluids and scheduled ticks
+		for s in sets:
+			WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
+		# Spawning
+		if random.random() < 0.001:
+			Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+		# Players & Screen
+		player.tick()
 		for t in things:
-			if (abs(t.x - player.x) < 250) and (abs(t.y - player.y) < 250) or keys[pygame.K_a] or alwaystick:
-				t.ticking = True
-				tickingcount += 1
-			else: t.ticking = False
-		for x in range(len(WORLD)):
-			for y in range(len(WORLD[x])):
-				cell = WORLD[x][y]
-				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
-				if cell in BLOCKS:
-					if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
-					else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
-					# FLUIDS
-					if BLOCKS[cell]["fluid"] == "source":
-						# Fall down
-						if insideBoard(x, y + 1) and (WORLD[x][y + 1] in BLOCKS) and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
-							sets.append({"pos": (x, y + 1), "state": "flowing_" + cell})
-						elif insideBoard(x, y + 1) and (WORLD[x][y + 1] in BLOCKS) and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
-							# Or flow left
-							if insideBoard(x - 1, y) and (WORLD[x - 1][y] in BLOCKS) and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
-								sets.append({"pos": (x - 1, y), "state": "flowing_" + cell})
-							# Or flow right
-							if insideBoard(x + 1, y) and (WORLD[x + 1][y] in BLOCKS) and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
-								sets.append({"pos": (x + 1, y), "state": "flowing_" + cell})
-					if BLOCKS[cell]["fluid"] == "flowing":
-						# Stop falling
-						sets.append({"pos": (x, y), "state": "air"})
-						if WORLD[x][y - 1] in [cell, cell[8:]] and y - 1 >= 0:
-							sets.append({"pos": (x, y), "state": cell})
-						if insideBoard(x + 1, y) and WORLD[x + 1][y] in [cell, cell[8:]]:
-							sets.append({"pos": (x, y), "state": cell})
-						if insideBoard(x - 1, y) and WORLD[x - 1][y] in [cell, cell[8:]]:
-							sets.append({"pos": (x, y), "state": cell})
-						# Fall down
-						if insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
-							sets.append({"pos": (x, y + 1), "state": cell})
-						elif insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
-							# Or flow left
-							if insideBoard(x - 1, y) and WORLD[x - 1][y] in BLOCKS and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
-								sets.append({"pos": (x - 1, y), "state": cell})
-							# Or flow right
-							if insideBoard(x + 1, y) and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
-								sets.append({"pos": (x + 1, y), "state": cell})
-		minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
-	# Fluids and scheduled ticks
-	for s in sets:
-		WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
-	# Spawning
-	if random.random() < 0.001:
-		Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
-	# Players & Screen
-	player.tick()
-	for t in things:
-		t.tick()
-	screen.blit(totalScreen, (250 - player.x, 280 - player.y))
-	player.draw(player.x, player.y)
-	for t in things:
-		t.draw(player.x, player.y)
-		# Despawning
-		if random.random() < 0.005 and not isinstance(t, Item):
-			t.die()
-		# Dying
-		elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
-			t.die()
-	# FLIP -----------------
-	# Framerate
-	if tickingrefresh == 1:
-		newf = datetime.datetime.now()
-		sec = (newf - fpscalc).total_seconds()
-		fps = round(1/sec)
-	if tickingrefresh == 2:
-		fpscalc = datetime.datetime.now()
-	# Debug info
-	pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
-	screen.blit(minimap, (0, 0))
-	w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
-	screen.blit(w, (BOARDSIZE[0], 0))
-	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
-	screen.blit(w, (0, BOARDSIZE[1]))
-	# Flip
-	pygame.display.flip()
-	c.tick(60)
+			t.tick()
+		screen.blit(totalScreen, (250 - player.x, 280 - player.y))
+		player.draw(player.x, player.y)
+		for t in things:
+			t.draw(player.x, player.y)
+			# Despawning
+			if random.random() < 0.005 and not isinstance(t, Item):
+				t.die()
+			# Dying
+			elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
+				t.die()
+		# FLIP -----------------
+		# Framerate
+		if tickingrefresh == 1:
+			newf = datetime.datetime.now()
+			sec = (newf - fpscalc).total_seconds()
+			fps = round(1/sec)
+		if tickingrefresh == 2:
+			fpscalc = datetime.datetime.now()
+		# Debug info
+		pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
+		screen.blit(minimap, (0, 0))
+		w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
+		screen.blit(w, (BOARDSIZE[0], 0))
+		w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
+		screen.blit(w, (0, BOARDSIZE[1]))
+		# Flip
+		pygame.display.flip()
+		c.tick(60)
+
+# FUNCTION CALLS ==============================================================================================
+
+WORLDSELECTION()
+GENERATORSELECTION()
+PLAYING()
