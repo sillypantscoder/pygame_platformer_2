@@ -21,6 +21,13 @@ BLOCKS = json.loads(rawStyleItems["blocks.json"].decode("UTF-8"))
 
 screen = pygame.display.set_mode([500, 560])
 
+def MAIN():
+	c = True
+	while c:
+		WORLDSELECTION()
+		GENERATORSELECTION()
+		c = PLAYING()
+
 # WORLD SELECTION -----------------------------------------
 
 wr = True
@@ -305,9 +312,6 @@ class Player(Entity):
 	def die(self):
 		self.x = 100
 		self.y = 0
-	def despawn(self):
-		pygame.quit()
-		exit()
 
 class Monster(Entity):
 	color = (0, 150, 0)
@@ -446,7 +450,8 @@ def PLAYING():
 	while True:
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
-				player.despawn()
+				pygame.quit()
+				return False;
 				# User clicked close button
 			if event.type == pygame.MOUSEBUTTONUP:
 				pos = pygame.mouse.get_pos()
@@ -469,6 +474,8 @@ def PLAYING():
 							t.die()
 				if keys[pygame.K_w]:
 					AllaySpawner(player.x, player.y)
+				if keys[pygame.K_ESCAPE]:
+					if PAUSE(): return True;
 		# DRAWING ------------
 		screen.fill(GRAY)
 		totalScreen.fill(WHITE)
@@ -576,8 +583,60 @@ def PLAYING():
 		pygame.display.flip()
 		c.tick(60)
 
+# Pause menu
+
+def PAUSE():
+	global things
+	global items
+	fps = "???"
+	continuerect = pygame.Rect(50, 150, 400, 50)
+	exitrect = pygame.Rect(50, 210, 400, 50)
+	while True:
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame.quit()
+				exit()
+				# User clicked close button
+			if event.type == pygame.MOUSEBUTTONUP:
+				pos = pygame.mouse.get_pos()
+				if continuerect.collidepoint(pos):
+					return False;
+				if exitrect.collidepoint(pos):
+					return True;
+			if event.type == pygame.KEYDOWN:
+				keys = pygame.key.get_pressed()
+				if keys[pygame.K_q]:
+					for t in things:
+						if isinstance(t, (Item, Monster, Spawner, Particle)) and not isinstance(t, ScoreItem):
+							t.die()
+				if keys[pygame.K_ESCAPE]:
+					return False;
+		# DRAWING ------------
+		screen.fill(GRAY)
+		t = FONT.render("Paused", True, BLACK)
+		screen.blit(t, ((500 - t.get_width()) / 2, 75))
+		# Continue button
+		pygame.draw.rect(screen, BLACK, continuerect)
+		t = FONT.render("Resume", True, WHITE)
+		screen.blit(t, ((500 - t.get_width()) / 2, 160))
+		# Exit button
+		pygame.draw.rect(screen, BLACK, exitrect)
+		t = FONT.render("Return to title screen", True, WHITE)
+		screen.blit(t, ((500 - t.get_width()) / 2, 220))
+		# FLIP -----------------
+		# Debug info
+		pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
+		minimap_pause = pygame.Surface(BOARDSIZE)
+		pygame.draw.rect(minimap_pause, GRAY, pygame.Rect(5, 5, 10, 20))
+		screen.blit(minimap_pause, (0, 0))
+		w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
+		screen.blit(w, (BOARDSIZE[0], 0))
+		w = FONT.render(f"{str(len(things))} entities", True, BLACK)
+		screen.blit(w, (0, BOARDSIZE[1]))
+		# Flip
+		pygame.display.flip()
+		c.tick(60)
+
 # FUNCTION CALLS ==============================================================================================
 
-WORLDSELECTION()
-GENERATORSELECTION()
-PLAYING()
+MAIN()
