@@ -25,6 +25,7 @@ def MAIN():
 	c = True
 	while c:
 		WORLDSELECTION()
+		GENERATORSELECTION()
 		c = PLAYING()
 	ENDGAME()
 
@@ -36,7 +37,7 @@ autoapocalypse = False
 
 def WORLDSELECTION():
 	global wr
-	global alwaystick
+	global autoapocalypse
 	running = True
 	while running:
 		screen.fill(WHITE)
@@ -89,7 +90,6 @@ def GENERATORSELECTION():
 		f = open("world.json", "w")
 		f.write(json.dumps(WORLD).replace("], [", 	"],\n ["))
 		f.close()
-
 	f = open("world.json", "r")
 	WORLD = json.loads(f.read())
 	f.close()
@@ -294,7 +294,6 @@ class Player(Entity):
 		self.memory = {"health": 100, "direction": None, "target": None}
 	def tickmove(self):
 		if self in things: things.remove(self)
-		if self.memory["health"] <= 0: endgame(self)
 		if autoapocalypse:
 			# Find a target.
 			target = None
@@ -434,15 +433,16 @@ class Allay(Entity):
 		# 1% chance kill myself.
 		if random.random() < 0.01: self.die()
 
-def ENDGAME(player):
+def ENDGAME():
+	global player
 	wc = FONT.render("Click anywhere to exit", True, BLACK)
 	while True:
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
-				player.despawn()
+				return;
 				# User clicked close button
 			if event.type == pygame.MOUSEBUTTONUP:
-				player.despawn()
+				return;
 		screen.fill(WHITE)
 		w = FONT.render(f"Score: {str(items['gem'])}", True, BLACK)
 		screen.blit(w, (CELLSIZE, CELLSIZE))
@@ -473,9 +473,10 @@ def PLAYING():
 		keys = pygame.key.get_pressed()
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
-				player.despawn()
+				return False;
 				# User clicked close button
 			if event.type == pygame.KEYDOWN:
+				keys = pygame.key.get_pressed()
 				if keys[pygame.K_SPACE]:
 					for zzz in range(30):
 						pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
@@ -578,6 +579,7 @@ def PLAYING():
 			# Dying
 			elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 				t.die()
+		if player.memory["health"] <= 0: return False
 		# FLIP -----------------
 		# Framerate
 		if tickingrefresh == 1:
@@ -624,7 +626,7 @@ def PAUSE():
 				keys = pygame.key.get_pressed()
 				if keys[pygame.K_q]:
 					for t in things:
-						if isinstance(t, (Item, Monster, Spawner, Particle)) and not isinstance(t, ScoreItem):
+						if isinstance(t, (Item, Monster, Particle)) and not isinstance(t, ScoreItem):
 							t.die()
 				if keys[pygame.K_ESCAPE]:
 					return False;
@@ -652,7 +654,7 @@ def PAUSE():
 		screen.blit(minimap_pause, (0, 0))
 		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
 		screen.blit(w, (BOARDSIZE[0], 0))
-		w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
+		w = FONT.render(f"{str(len(things))} entities", True, BLACK)
 		screen.blit(w, (0, BOARDSIZE[1]))
 		# Flip
 		pygame.display.flip()
