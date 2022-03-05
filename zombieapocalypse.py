@@ -21,65 +21,78 @@ BLOCKS = json.loads(rawStyleItems["blocks.json"].decode("UTF-8"))
 
 screen = pygame.display.set_mode([500, 570])
 
+def MAIN():
+	c = True
+	while c:
+		WORLDSELECTION()
+		c = PLAYING()
+	ENDGAME()
+
 # WORLD SELECTION -----------------------------------------
 
 wr = True
 alwaystick = True
 autoapocalypse = False
 
-running = True
-while running:
-	screen.fill(WHITE)
-	if wr:
-		w = FONT.render("Generate new world", True, BLACK)
-	else:
-		w = FONT.render("Load world file", True, BLACK)
-	screen.blit(w, (0, 0))
-	wy = w.get_height()
-	g = FONT.render("Go >", True, GREEN)
-	screen.blit(g, (0, wy))
-	gy = g.get_height() + wy
-	# Auto Apocalypse?
-	if autoapocalypse:
-		a = FONT.render("Auto Apocalypse: Y", True, BLACK)
-	else:
-		a = FONT.render("Auto Apocalypse: N", True, BLACK)
-	screen.blit(a, (0, wy + gy))
-	ay = a.get_height() + wy + gy
-	# Events
-	for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.quit(); exit()
-				# User clicked close button
-			if event.type == pygame.MOUSEBUTTONUP:
-				pos = pygame.mouse.get_pos()
-				if pos[1] < wy:
-					wr = not wr
-				elif pos[1] < gy:
-					running = False
-				elif pos[1] < ay:
-					autoapocalypse = not autoapocalypse
-	c.tick(60)
-	pygame.display.flip()
+def WORLDSELECTION():
+	global wr
+	global alwaystick
+	running = True
+	while running:
+		screen.fill(WHITE)
+		if wr:
+			w = FONT.render("Generate new world", True, BLACK)
+		else:
+			w = FONT.render("Load world file", True, BLACK)
+		screen.blit(w, (0, 0))
+		wy = w.get_height()
+		g = FONT.render("Go >", True, GREEN)
+		screen.blit(g, (0, wy))
+		gy = g.get_height() + wy
+		# Auto Apocalypse?
+		if autoapocalypse:
+			a = FONT.render("Auto Apocalypse: Y", True, BLACK)
+		else:
+			a = FONT.render("Auto Apocalypse: N", True, BLACK)
+		screen.blit(a, (0, wy + gy))
+		ay = a.get_height() + wy + gy
+		# Events
+		for event in pygame.event.get():
+				if event.type == pygame.QUIT:
+					pygame.quit(); exit()
+					# User clicked close button
+				if event.type == pygame.MOUSEBUTTONUP:
+					pos = pygame.mouse.get_pos()
+					if pos[1] < wy:
+						wr = not wr
+					elif pos[1] < gy:
+						running = False
+					elif pos[1] < ay:
+						autoapocalypse = not autoapocalypse
+		c.tick(60)
+		pygame.display.flip()
 
 # GENERATOR SELECTION
 
+WORLD = []
+def GENERATORSELECTION():
+	global wr
+	global WORLD
+	if wr:
+		WORLD = []
+		for x in range(BOARDSIZE[0]):
+			WORLD.append([])
+			for y in range(BOARDSIZE[1]):
+				if x % 2 == 0 and y % 2 == 0: WORLD[x].append("hard_stone")
+				elif x % 2 == 0 or y % 2 == 0: WORLD[x].append(random.choice(["hard_stone", "air", "air", "tnt"]))
+				else: WORLD[x].append("air")
+		f = open("world.json", "w")
+		f.write(json.dumps(WORLD).replace("], [", 	"],\n ["))
+		f.close()
 
-if wr:
-	WORLD = []
-	for x in range(BOARDSIZE[0]):
-		WORLD.append([])
-		for y in range(BOARDSIZE[1]):
-			if x % 2 == 0 and y % 2 == 0: WORLD[x].append("hard_stone")
-			elif x % 2 == 0 or y % 2 == 0: WORLD[x].append(random.choice(["hard_stone", "air", "air", "tnt"]))
-			else: WORLD[x].append("air")
-	f = open("world.json", "w")
-	f.write(json.dumps(WORLD).replace("], [", 	"],\n ["))
+	f = open("world.json", "r")
+	WORLD = json.loads(f.read())
 	f.close()
-
-f = open("world.json", "r")
-WORLD = json.loads(f.read())
-f.close()
 
 # PLAYING -------------------------------------------------
 
@@ -322,9 +335,6 @@ class Player(Entity):
 				self.vx += 1
 			if keys[pygame.K_UP] and self.canjump:
 				self.vy = -3.1
-	def despawn(self):
-		pygame.quit()
-		exit()
 
 class Monster(Entity):
 	color = (0, 150, 0)
@@ -424,7 +434,7 @@ class Allay(Entity):
 		# 1% chance kill myself.
 		if random.random() < 0.01: self.die()
 
-def endgame(player):
+def ENDGAME(player):
 	wc = FONT.render("Click anywhere to exit", True, BLACK)
 	while True:
 		for event in pygame.event.get():
@@ -450,138 +460,204 @@ player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
 items = {
 	"gem": 0
 }
-tickingrefresh = 10
-tickingcount = 0
-fpscalc = datetime.datetime.now()
-fps = "???"
-minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
-while True:
-	keys = pygame.key.get_pressed()
-	for event in pygame.event.get():
-		if event.type == pygame.QUIT:
-			player.despawn()
-			# User clicked close button
-		if event.type == pygame.MOUSEBUTTONUP:
-			pos = pygame.mouse.get_pos()
-		if event.type == pygame.KEYDOWN:
-			if keys[pygame.K_SPACE]:
-				for zzz in range(20):
-					pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
-					Monster(*pos)
-			if keys[pygame.K_q]:
-				for t in things:
-					if isinstance(t, (Item, Monster, Particle)):
-						t.die()
-	if keys[pygame.K_w]:
-		Allay(player.x, player.y)
-	# DRAWING ------------
-	screen.fill(GRAY)
-	totalScreen.fill(WHITE)
-	# Board
-	sets = []
-	for x in range(round(player.x / CELLSIZE) - 7, round(player.x / CELLSIZE) + 7):
-			for y in range(round(player.y / CELLSIZE) - 7, round(player.y / CELLSIZE) + 7):
-				if not insideBoard(x, y): continue
-				cell = WORLD[x][y]
-				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
-				if cell in BLOCKS:
-					if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
-					else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
-				else:
-					pygame.draw.rect(totalScreen, (255, 0, 255), cellrect)
-					pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.topleft, CELLSIZE / 2, CELLSIZE / 2))
-					pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.center, CELLSIZE / 2, CELLSIZE / 2))
-	# Ticking
-	if tickingrefresh > 0:
-		tickingrefresh -= 1
-	else:
-		tickingcount = 0
-		tickingrefresh = 10
+def PLAYING():
+	global things
+	global player
+	global items
+	tickingrefresh = 10
+	tickingcount = 0
+	fpscalc = datetime.datetime.now()
+	fps = "???"
+	minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
+	while True:
 		keys = pygame.key.get_pressed()
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				player.despawn()
+				# User clicked close button
+			if event.type == pygame.KEYDOWN:
+				if keys[pygame.K_SPACE]:
+					for zzz in range(30):
+						pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+						Monster(*pos)
+				if keys[pygame.K_q]:
+					for t in things:
+						if isinstance(t, (Item, Monster, Particle)):
+							t.die()
+				if keys[pygame.K_ESCAPE]:
+					if PAUSE(): return True;
+		if keys[pygame.K_w]:
+			Allay(player.x, player.y)
+		# DRAWING ------------
+		screen.fill(GRAY)
+		totalScreen.fill(WHITE)
+		# Board
+		sets = []
+		for x in range(round(player.x / CELLSIZE) - 7, round(player.x / CELLSIZE) + 7):
+				for y in range(round(player.y / CELLSIZE) - 7, round(player.y / CELLSIZE) + 7):
+					if not insideBoard(x, y): continue
+					cell = WORLD[x][y]
+					cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
+					if cell in BLOCKS:
+						if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
+						else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
+					else:
+						pygame.draw.rect(totalScreen, (255, 0, 255), cellrect)
+						pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.topleft, CELLSIZE / 2, CELLSIZE / 2))
+						pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.center, CELLSIZE / 2, CELLSIZE / 2))
+		# Ticking
+		if tickingrefresh > 0:
+			tickingrefresh -= 1
+		else:
+			tickingcount = 0
+			tickingrefresh = 10
+			keys = pygame.key.get_pressed()
+			for t in things:
+				if (abs(t.x - player.x) < 250) and (abs(t.y - player.y) < 250) or keys[pygame.K_a] or alwaystick:
+					t.ticking = True
+					tickingcount += 1
+				else: t.ticking = False
+			for x in range(len(WORLD)):
+				for y in range(len(WORLD[x])):
+					cell = WORLD[x][y]
+					cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
+					if cell in BLOCKS:
+						if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
+						else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
+						# FLUIDS
+						if BLOCKS[cell]["fluid"] == "source":
+							# Fall down
+							if insideBoard(x, y + 1) and (WORLD[x][y + 1] in BLOCKS) and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
+								sets.append({"pos": (x, y + 1), "state": "flowing_" + cell})
+							elif insideBoard(x, y + 1) and (WORLD[x][y + 1] in BLOCKS) and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
+								# Or flow left
+								if insideBoard(x - 1, y) and (WORLD[x - 1][y] in BLOCKS) and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x - 1, y), "state": "flowing_" + cell})
+								# Or flow right
+								if insideBoard(x + 1, y) and (WORLD[x + 1][y] in BLOCKS) and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x + 1, y), "state": "flowing_" + cell})
+						if BLOCKS[cell]["fluid"] == "flowing":
+							# Stop falling
+							sets.append({"pos": (x, y), "state": "air"})
+							if WORLD[x][y - 1] in [cell, cell[8:]] and y - 1 >= 0:
+								sets.append({"pos": (x, y), "state": cell})
+							if insideBoard(x + 1, y) and WORLD[x + 1][y] in [cell, cell[8:]]:
+								sets.append({"pos": (x, y), "state": cell})
+							if insideBoard(x - 1, y) and WORLD[x - 1][y] in [cell, cell[8:]]:
+								sets.append({"pos": (x, y), "state": cell})
+							# Fall down
+							if insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
+								sets.append({"pos": (x, y + 1), "state": cell})
+							elif insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
+								# Or flow left
+								if insideBoard(x - 1, y) and WORLD[x - 1][y] in BLOCKS and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x - 1, y), "state": cell})
+								# Or flow right
+								if insideBoard(x + 1, y) and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
+									sets.append({"pos": (x + 1, y), "state": cell})
+			minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
+		# Fluids and scheduled ticks
+		for s in sets:
+			WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
+		# Spawning
+		if random.random() < (0.01 * items["gem"]) + 0.05:
+			pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+			Monster(*pos)
+			Particle(*pos)
+		# Players & Screen
+		player.tick()
 		for t in things:
-			if (abs(t.x - player.x) < 250) and (abs(t.y - player.y) < 250) or keys[pygame.K_a] or alwaystick:
-				t.ticking = True
-				tickingcount += 1
-			else: t.ticking = False
-		for x in range(len(WORLD)):
-			for y in range(len(WORLD[x])):
-				cell = WORLD[x][y]
-				cellrect = pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE)
-				if cell in BLOCKS:
-					if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
-					else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
-					# FLUIDS
-					if BLOCKS[cell]["fluid"] == "source":
-						# Fall down
-						if insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
-							sets.append({"pos": (x, y + 1), "state": "flowing_" + cell})
-						elif insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
-							# Or flow left
-							if insideBoard(x - 1, y) and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
-								sets.append({"pos": (x - 1, y), "state": "flowing_" + cell})
-							# Or flow right
-							if insideBoard(x + 1, y) and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
-								sets.append({"pos": (x + 1, y), "state": "flowing_" + cell})
-					if BLOCKS[cell]["fluid"] == "flowing":
-						# Stop falling
-						sets.append({"pos": (x, y), "state": "air"})
-						if WORLD[x][y - 1] in [cell, cell[8:]] and y - 1 >= 0:
-							sets.append({"pos": (x, y), "state": cell})
-						if insideBoard(x + 1, y) and WORLD[x + 1][y] in [cell, cell[8:]]:
-							sets.append({"pos": (x, y), "state": cell})
-						if insideBoard(x - 1, y) and WORLD[x - 1][y] in [cell, cell[8:]]:
-							sets.append({"pos": (x, y), "state": cell})
-						# Fall down
-						if insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "empty":
-							sets.append({"pos": (x, y + 1), "state": cell})
-						elif insideBoard(x, y + 1) and WORLD[x][y + 1] in BLOCKS and BLOCKS[WORLD[x][y + 1]]["collision"] == "solid":
-							# Or flow left
-							if insideBoard(x - 1, y) and WORLD[x - 1][y] in BLOCKS and BLOCKS[WORLD[x - 1][y]]["collision"] == "empty":
-								sets.append({"pos": (x - 1, y), "state": cell})
-							# Or flow right
-							if insideBoard(x + 1, y) and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
-								sets.append({"pos": (x + 1, y), "state": cell})
-		minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
-	# Fluids and scheduled ticks
-	for s in sets:
-		WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
-	# Spawning
-	if random.random() < (0.01 * items["gem"]) + 0.05:
-		pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
-		Monster(*pos)
-		Particle(*pos)
-	# Players & Screen
-	player.tick()
-	for t in things:
-		t.tick()
-	screen.blit(totalScreen, (250 - player.x, 280 - player.y))
-	player.draw(player.x, player.y)
-	for t in things:
-		t.draw(player.x, player.y)
-		# Despawning
-		if random.random() < 0.005:
-			t.die()
-		# Dying
-		elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
-			t.die()
-	# FLIP -----------------
-	# Framerate
-	if tickingrefresh == 1:
-		newf = datetime.datetime.now()
-		sec = (newf - fpscalc).total_seconds()
-		fps = round(1/sec)
-	if tickingrefresh == 2:
-		fpscalc = datetime.datetime.now()
-	# Debug info
-	pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
-	screen.blit(minimap, (0, 0))
-	w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
-	screen.blit(w, (BOARDSIZE[0], 0))
-	w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
-	screen.blit(w, (0, BOARDSIZE[1]))
-	# Health bar
-	pygame.draw.rect(screen, RED, pygame.Rect(0, 560, 500, 10))
-	pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * 5, 10))
-	# Flip
-	pygame.display.flip()
-	c.tick(60)
+			t.tick()
+		screen.blit(totalScreen, (250 - player.x, 280 - player.y))
+		player.draw(player.x, player.y)
+		for t in things:
+			t.draw(player.x, player.y)
+			# Despawning
+			if random.random() < 0.005:
+				t.die()
+			# Dying
+			elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
+				t.die()
+		# FLIP -----------------
+		# Framerate
+		if tickingrefresh == 1:
+			newf = datetime.datetime.now()
+			sec = (newf - fpscalc).total_seconds()
+			fps = round(1/sec)
+		if tickingrefresh == 2:
+			fpscalc = datetime.datetime.now()
+		# Debug info
+		pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
+		screen.blit(minimap, (0, 0))
+		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
+		screen.blit(w, (BOARDSIZE[0], 0))
+		w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
+		screen.blit(w, (0, BOARDSIZE[1]))
+		# Health bar
+		pygame.draw.rect(screen, RED, pygame.Rect(0, 560, 500, 10))
+		pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * 5, 10))
+		# Flip
+		pygame.display.flip()
+		c.tick(60)
+
+# Pause menu
+
+def PAUSE():
+	global things
+	global items
+	fps = "???"
+	continuerect = pygame.Rect(50, 150, 400, 50)
+	exitrect = pygame.Rect(50, 210, 400, 50)
+	while True:
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame.quit()
+				exit()
+				# User clicked close button
+			if event.type == pygame.MOUSEBUTTONUP:
+				pos = pygame.mouse.get_pos()
+				if continuerect.collidepoint(pos):
+					return False;
+				if exitrect.collidepoint(pos):
+					return True;
+			if event.type == pygame.KEYDOWN:
+				keys = pygame.key.get_pressed()
+				if keys[pygame.K_q]:
+					for t in things:
+						if isinstance(t, (Item, Monster, Spawner, Particle)) and not isinstance(t, ScoreItem):
+							t.die()
+				if keys[pygame.K_ESCAPE]:
+					return False;
+		# DRAWING ------------
+		screen.fill(GRAY)
+		t = FONT.render("Paused", True, BLACK)
+		screen.blit(t, ((500 - t.get_width()) / 2, 75))
+		# Continue button
+		pygame.draw.rect(screen, BLACK, continuerect)
+		t = FONT.render("Resume", True, WHITE)
+		screen.blit(t, ((500 - t.get_width()) / 2, 160))
+		# Exit button
+		pygame.draw.rect(screen, BLACK, exitrect)
+		t = FONT.render("Return to title screen", True, WHITE)
+		screen.blit(t, ((500 - t.get_width()) / 2, 220))
+		# FLIP -----------------
+		# Debug info
+		pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
+		minimap_pause = pygame.Surface(BOARDSIZE)
+		minimap_pause.fill(WHITE)
+		pygame.draw.rect(minimap_pause, GRAY, pygame.Rect(5, 5, 5, 20))
+		pygame.draw.rect(minimap_pause, BLACK, pygame.Rect(6, 6, 5, 20))
+		pygame.draw.rect(minimap_pause, GRAY, pygame.Rect(15, 5, 5, 20))
+		pygame.draw.rect(minimap_pause, BLACK, pygame.Rect(16, 6, 5, 20))
+		screen.blit(minimap_pause, (0, 0))
+		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
+		screen.blit(w, (BOARDSIZE[0], 0))
+		w = FONT.render(f"{str(len(things))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
+		screen.blit(w, (0, BOARDSIZE[1]))
+		# Flip
+		pygame.display.flip()
+		c.tick(60)
+
+# FUNCTION CALLS ==============================================================================================
+
+MAIN()

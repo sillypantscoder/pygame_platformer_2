@@ -448,6 +448,7 @@ def PLAYING():
 	fps = "???"
 	minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
 	while True:
+		keys = pygame.key.get_pressed()
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame.quit()
@@ -627,7 +628,11 @@ def PAUSE():
 		# Debug info
 		pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
 		minimap_pause = pygame.Surface(BOARDSIZE)
-		pygame.draw.rect(minimap_pause, GRAY, pygame.Rect(5, 5, 10, 20))
+		minimap_pause.fill(WHITE)
+		pygame.draw.rect(minimap_pause, GRAY, pygame.Rect(5, 5, 5, 20))
+		pygame.draw.rect(minimap_pause, BLACK, pygame.Rect(6, 6, 5, 20))
+		pygame.draw.rect(minimap_pause, GRAY, pygame.Rect(15, 5, 5, 20))
+		pygame.draw.rect(minimap_pause, BLACK, pygame.Rect(16, 6, 5, 20))
 		screen.blit(minimap_pause, (0, 0))
 		w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
 		screen.blit(w, (BOARDSIZE[0], 0))
