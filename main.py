@@ -1,7 +1,6 @@
 from os import listdir, system
 import sys
 import random
-from tkinter import SEL
 import pygame
 import json
 import math
@@ -60,7 +59,6 @@ def SELECTOR(items: list):
 		pygame.display.flip()
 	screen = pygame.display.set_mode([500, 560])
 
-
 # WORLD SELECTION -----------------------------------------
 
 gennewworld = True
@@ -104,7 +102,6 @@ def GENERATORSELECTION():
 	f = open("world.json", "r")
 	WORLD = json.loads(f.read())
 	f.close()
-	screen = pygame.display.set_mode((500, 560))
 
 # PLAYING -------------------------------------------------
 
@@ -600,10 +597,6 @@ def PAUSE():
 					return True;
 			if event.type == pygame.KEYDOWN:
 				keys = pygame.key.get_pressed()
-				if keys[pygame.K_q]:
-					for t in things:
-						if isinstance(t, (Item, Monster, Spawner, Particle)) and not isinstance(t, ScoreItem):
-							t.die()
 				if keys[pygame.K_ESCAPE]:
 					return False;
 		# DRAWING ------------
