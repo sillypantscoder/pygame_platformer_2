@@ -20,8 +20,17 @@ c = pygame.time.Clock()
 screen = pygame.display.set_mode([500, 560])
 
 def MAIN():
+	global things
+	global player
+	global items
 	c = True
 	while c:
+		things = []
+		player = Player(100, 0)
+		items = {
+			"danger": 0,
+			"score": 0
+		}
 		WORLDSELECTION()
 		GENERATORSELECTION()
 		c = PLAYING()
@@ -78,6 +87,8 @@ alwaystick = True
 def WORLDSELECTION():
 	global gennewworld
 	global alwaystick
+	gennewworld = True
+	alwaystick = True
 	running = True
 	while running:
 		option = SELECTOR("Platformer", ["Play >", "", "Generate new world: " + str(gennewworld), "Always tick entities: " + str(alwaystick), "", "Extensions"])
@@ -444,9 +455,8 @@ class Allay(Entity):
 		targetdist = 1000
 		for t in things:
 			dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
-			# Find the closest Item, but if a ScoreItem is available, go for that instead.
-			# 30% chance of targeting a different Item.
-			if (dist < targetdist or random.random()<0.3 or isinstance(t, ScoreItem)) and isinstance(t, Item):
+			# Find the closest Item.
+			if dist < targetdist and isinstance(t, Item):
 				target = t
 				targetdist = dist
 		if not target: return
