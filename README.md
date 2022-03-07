@@ -14,12 +14,12 @@ In this version:
 To play the game, run "python3 main.py" in the terminal. Then click on "Go" and click on "default.py". You will appear in a randomly generated world.
 
 1. You are the red square. You can walk around with the arrow keys, and up to jump.
-2. Walking into red TNT blocks will explode them. A big danger icon ![](textures/particle/danger.png) will appear whenever there is an explosion.
-3. Occasionally, explosions will drop danger items ![](textures/item/danger.png). These are small items that fall to the ground. You can pick them up by walking on them
+2. Walking into red TNT blocks will explode them. A big danger icon will appear whenever there is an explosion.
+3. Occasionally, explosions will drop danger items. These are small items that fall to the ground. You can pick them up by walking on them
 4. There is a minimap in the top left corner. You can try to use that to get around.
 5. To the right of the minimap is some text showing how many danger items you have collected.
 6. Occasionally, spawners will spawn around the map. These look just like you, but they are blue instead of red. The spawners will spawn lots of monsters, which are green, and exploding monsters, which are light green.
-7. Normal monsters will drop lots of danger items when they despawn, which shouldn't take very long. Exploding monsters will explode when they despawn, producing a big danger icon and possibly a danger item. Exploding monsters also drop score items ![](textures/item/score.png), which you can use to increase your score.
+7. Normal monsters will drop lots of danger items when they despawn, which shouldn't take very long. Exploding monsters will explode when they despawn, producing a big danger icon and possibly a danger item. Exploding monsters also drop score items, which you can use to increase your score.
 8. (New!) Water blocks are blue, and flowing water is light blue. Water flows down, left, and right. You (and Allays) can swim.
 
 ### Danger items
@@ -49,6 +49,4 @@ New: Extensions!!!
 
 - Extensions can add, remove, or modify blocks, generators, and textures.
 - Install an extension by adding the extension package to the "extensions" folder.
-- Then run "python3 updateenv.py --add-extension extensionname" in the terminal to update the styles to use the extension.
-- Now, you can use the normal game, Zombie Apocalypse Mode, and the level editor with the extension.
-- To disable the extension, run "python3 updateenv.py --remove-extension" in the Terminal. You should now be all good to go!
+- Then, start the game and press "Extensions" to manage your extensions. Have fun!

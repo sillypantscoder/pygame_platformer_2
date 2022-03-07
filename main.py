@@ -16,8 +16,6 @@ pygame.font.init()
 WORLD = None
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
-rawStyleItems = zipHelpers.extract_zip("style_env.zip").items
-BLOCKS = json.loads(rawStyleItems["blocks.json"].decode("UTF-8"))
 
 screen = pygame.display.set_mode([500, 560])
 
@@ -32,14 +30,22 @@ def MAIN():
 
 def SELECTOR(header, items: list):
 	global screen
-	if 40 * len(items) > 560:
-		screen = pygame.display.set_mode((500, 40 * len(items)))
+	scrn_height = 560
+	scrn_width = 500
+	if 40 * (len(items) + 1) > 560:
+		scrn_height = 40 * (len(items) + 1)
+	for i in items:
+		w = FONT.render(i, True, BLACK)
+		if w.get_width() > scrn_width:
+			scrn_width = w.get_width()
+	screen = pygame.display.set_mode([scrn_width, scrn_height])
 	running = True
+	big = False
 	while running:
 		pos = pygame.mouse.get_pos()
 		screen.fill(WHITE)
 		# Header
-		pygame.draw.rect(screen, BLACK, pygame.Rect(0, 0, 500, 40))
+		pygame.draw.rect(screen, BLACK, pygame.Rect(0, 0, scrn_width, 40))
 		w = FONT.render(header, True, WHITE)
 		screen.blit(w, (0, 0))
 		# Items
@@ -49,7 +55,7 @@ def SELECTOR(header, items: list):
 			w = FONT.render(i, True, BLACK)
 			if math.floor(pos[1] / 40) * 40 == h:
 				w = FONT.render(i, True, WHITE)
-				pygame.draw.rect(screen, BLACK, pygame.Rect(0, h, 500, 40))
+				pygame.draw.rect(screen, BLACK, pygame.Rect(0, h, scrn_width, 40))
 			screen.blit(w, (0, h))
 		# Events
 		for event in pygame.event.get():
@@ -59,10 +65,10 @@ def SELECTOR(header, items: list):
 				if event.type == pygame.MOUSEBUTTONUP:
 					pos = pygame.mouse.get_pos()
 					if pos[1] - 40 < len(items) * 40:
+						screen = pygame.display.set_mode([500, 560])
 						return math.floor((pos[1] - 40) / 40)
 		c.tick(60)
 		pygame.display.flip()
-	screen = pygame.display.set_mode([500, 560])
 
 # WORLD SELECTION -----------------------------------------
 
@@ -74,23 +80,41 @@ def WORLDSELECTION():
 	global alwaystick
 	running = True
 	while running:
-		option = SELECTOR("Platformer", ["Play >", "", "Generate new world: " + str(gennewworld), "Always tick entities: " + str(alwaystick)])
+		option = SELECTOR("Platformer", ["Play >", "", "Generate new world: " + str(gennewworld), "Always tick entities: " + str(alwaystick), "", "Extensions"])
 		if option == 0:
 			running = False
 		elif option == 2:
 			gennewworld = not gennewworld
 		elif option == 3:
 			alwaystick = not alwaystick
+		elif option == 5:
+			EXTENSIONS()
 		c.tick(60)
 		pygame.display.flip()
 
 # GENERATOR SELECTION
 
 WORLD = []
+rawStyleItems = []
+BLOCKS = []
+textures = {}
 def GENERATORSELECTION():
 	global gennewworld
 	global WORLD
 	global screen
+	global rawStyleItems
+	global BLOCKS
+	global textures
+	rawStyleItems = zipHelpers.extract_zip("style_env.zip").items
+	BLOCKS = json.loads(rawStyleItems["blocks.json"].decode("UTF-8"))
+	for filename in rawStyleItems:
+		if "textures/" in filename:
+			if filename[-1] != "/":
+				try:
+					textures[filename[9:]] = bytesToSurface(rawStyleItems[filename])
+				except:
+					print(filename)
+					exit(1)
 	items = {}
 	itemNames = []
 	for filename in rawStyleItems:
@@ -109,7 +133,32 @@ def GENERATORSELECTION():
 	WORLD = json.loads(f.read())
 	f.close()
 
-# PLAYING -------------------------------------------------
+# EXTENSION MANAGER
+
+def EXTENSIONS():
+	def addextension():
+		ex = []
+		e = listdir("extensions")
+		for x in e:
+			ex.append(x[:-4])
+		option = SELECTOR("Select Extension", ["Cancel", "", *ex])
+		if option < 2:
+			pass
+		else:
+			system("python3 updateenv.py --add-extension " + ex[option - 2])
+	running = True
+	while running:
+		currentExtension = zipHelpers.extract_zip("style_env.zip").items["meta.txt"].decode("UTF-8")[:-1]
+		if currentExtension == "(No extension installed)":
+			option = SELECTOR("Extensions", ["Back", "", "No extension installed", "Add extension"])
+			if option == 0: running = False
+			elif option == 3: addextension()
+		else:
+			option = SELECTOR("Extensions", ["Back", "", "Current extension: " + currentExtension, "Remove extension"])
+			if option == 0: running = False
+			elif option == 3: system("python3 updateenv.py --remove-extension")
+
+# PLAYING -------------------------------------------------------------------------------------------------------------------------------------------
 
 def bytesToSurface(b: bytes):
 	f = open("texture.png", "wb")
@@ -118,16 +167,6 @@ def bytesToSurface(b: bytes):
 	s = pygame.image.load("texture.png")
 	system("rm texture.png")
 	return s
-
-textures = {}
-for filename in rawStyleItems:
-	if "textures/" in filename:
-		if filename[-1] != "/":
-			try:
-				textures[filename[9:]] = bytesToSurface(rawStyleItems[filename])
-			except:
-				print(filename)
-				exit(1)
 
 def errormsg(entity, msg):
 	if "--show-errors" in sys.argv:
