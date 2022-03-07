@@ -1,6 +1,7 @@
 from os import listdir, system
 import sys
 import random
+from tkinter import SEL
 import pygame
 import json
 import math
@@ -28,32 +29,24 @@ def MAIN():
 		GENERATORSELECTION()
 		c = PLAYING()
 
-# WORLD SELECTION -----------------------------------------
+# SELECTOR SCRIPT
 
-wr = True
-alwaystick = True
-def WORLDSELECTION():
-	global wr
-	global alwaystick
+def SELECTOR(items: list):
+	global screen
+	if 40 * len(items) > 560:
+		screen = pygame.display.set_mode((500, 40 * len(items)))
 	running = True
 	while running:
+		pos = pygame.mouse.get_pos()
 		screen.fill(WHITE)
-		if wr:
-			w = FONT.render("Generate new world", True, BLACK)
-		else:
-			w = FONT.render("Load world file", True, BLACK)
-		screen.blit(w, (0, 0))
-		wy = w.get_height()
-		g = FONT.render("Go >", True, GREEN)
-		screen.blit(g, (0, wy))
-		gy = g.get_height() + wy
-		# Always ticking?
-		if alwaystick:
-			a = FONT.render("Always tick entities: Y", True, BLACK)
-		else:
-			a = FONT.render("Always tick entities: N", True, BLACK)
-		screen.blit(a, (0, wy + gy))
-		ay = a.get_height() + wy + gy
+		h = 0
+		for i in items:
+			w = FONT.render(i, True, BLACK)
+			if math.floor(pos[1] / 40) * 40 == h:
+				w = FONT.render(i, True, WHITE)
+				pygame.draw.rect(screen, BLACK, pygame.Rect(0, h, 500, 40))
+			screen.blit(w, (0, h))
+			h += 40
 		# Events
 		for event in pygame.event.get():
 				if event.type == pygame.QUIT:
@@ -61,12 +54,29 @@ def WORLDSELECTION():
 					# User clicked close button
 				if event.type == pygame.MOUSEBUTTONUP:
 					pos = pygame.mouse.get_pos()
-					if pos[1] < wy:
-						wr = not wr
-					elif pos[1] < gy:
-						running = False
-					elif pos[1] < ay:
-						alwaystick = not alwaystick
+					if pos[1] < len(items) * 40:
+						return math.floor(pos[1] / 40)
+		c.tick(60)
+		pygame.display.flip()
+	screen = pygame.display.set_mode([500, 560])
+
+
+# WORLD SELECTION -----------------------------------------
+
+gennewworld = True
+alwaystick = True
+def WORLDSELECTION():
+	global gennewworld
+	global alwaystick
+	running = True
+	while running:
+		option = SELECTOR(["Play >", "", "Generate new world: " + str(gennewworld), "Always tick entities: " + str(alwaystick)])
+		if option == 0:
+			running = False
+		elif option == 2:
+			gennewworld = not gennewworld
+		elif option == 3:
+			alwaystick = not alwaystick
 		c.tick(60)
 		pygame.display.flip()
 
@@ -74,7 +84,7 @@ def WORLDSELECTION():
 
 WORLD = []
 def GENERATORSELECTION():
-	global wr
+	global gennewworld
 	global WORLD
 	global screen
 	items = {}
@@ -84,29 +94,10 @@ def GENERATORSELECTION():
 			if filename != "generators/":
 				items[filename[11:]] = rawStyleItems[filename].decode("UTF-8")
 				itemNames.append(filename[11:])
-	screen = pygame.display.set_mode((500, 40 * len(items)))
-	running = wr
-	while running:
-		screen.fill(WHITE)
-		itr = 0
-		for i in items:
-			w = FONT.render(i, True, BLACK)
-			screen.blit(w, (0, itr * 40))
-			itr += 1
-		for event in pygame.event.get():
-				if event.type == pygame.QUIT:
-					pygame.quit(); exit()
-					# User clicked close button
-				if event.type == pygame.MOUSEBUTTONUP:
-					pos = pygame.mouse.get_pos()
-					y = math.floor(pos[1] / 40)
-					wr = itemNames[y]
-					running = False
-		c.tick(60)
-		pygame.display.flip()
-	if wr:
+	if gennewworld:
+		option = SELECTOR(items)
 		f = open("generator.py", "w")
-		f.write(items[wr])
+		f.write(items[itemNames[option]])
 		f.close()
 		system("python3 generator.py")
 		system("rm generator.py")
@@ -595,6 +586,7 @@ def PAUSE():
 	continuerect = pygame.Rect(50, 150, 400, 50)
 	exitrect = pygame.Rect(50, 210, 400, 50)
 	while True:
+		pos = pygame.mouse.get_pos()
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame.quit()
@@ -621,10 +613,16 @@ def PAUSE():
 		# Continue button
 		pygame.draw.rect(screen, BLACK, continuerect)
 		t = FONT.render("Resume", True, WHITE)
+		if continuerect.collidepoint(pos):
+			pygame.draw.rect(screen, WHITE, continuerect)
+			t = FONT.render("Resume", True, BLACK)
 		screen.blit(t, ((500 - t.get_width()) / 2, 160))
 		# Exit button
 		pygame.draw.rect(screen, BLACK, exitrect)
 		t = FONT.render("Return to title screen", True, WHITE)
+		if exitrect.collidepoint(pos):
+			pygame.draw.rect(screen, WHITE, exitrect)
+			t = FONT.render("Return to title screen", True, BLACK)
 		screen.blit(t, ((500 - t.get_width()) / 2, 220))
 		# FLIP -----------------
 		# Debug info
