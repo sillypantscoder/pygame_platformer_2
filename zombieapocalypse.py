@@ -31,9 +31,9 @@ def MAIN():
 
 def SELECTOR(header, items: list):
 	global screen
-	scrn_height = 560
+	scrn_height = 570
 	scrn_width = 500
-	if 40 * (len(items) + 1) > 560:
+	if 40 * (len(items) + 1) > 570:
 		scrn_height = 40 * (len(items) + 1)
 	for i in items:
 		w = FONT.render(i, True, BLACK)
@@ -66,6 +66,7 @@ def SELECTOR(header, items: list):
 				if event.type == pygame.MOUSEBUTTONUP:
 					pos = pygame.mouse.get_pos()
 					if pos[1] - 40 < len(items) * 40:
+						screen = pygame.display.set_mode([500, 570])
 						return math.floor((pos[1] - 40) / 40)
 		c.tick(60)
 		pygame.display.flip()
