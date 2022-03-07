@@ -76,6 +76,7 @@ WORLD = []
 def GENERATORSELECTION():
 	global wr
 	global WORLD
+	global screen
 	items = {}
 	itemNames = []
 	for filename in rawStyleItems:
@@ -83,6 +84,7 @@ def GENERATORSELECTION():
 			if filename != "generators/":
 				items[filename[11:]] = rawStyleItems[filename].decode("UTF-8")
 				itemNames.append(filename[11:])
+	screen = pygame.display.set_mode((500, 40 * len(items)))
 	running = wr
 	while running:
 		screen.fill(WHITE)
@@ -102,7 +104,6 @@ def GENERATORSELECTION():
 					running = False
 		c.tick(60)
 		pygame.display.flip()
-
 	if wr:
 		f = open("generator.py", "w")
 		f.write(items[wr])
@@ -112,6 +113,7 @@ def GENERATORSELECTION():
 	f = open("world.json", "r")
 	WORLD = json.loads(f.read())
 	f.close()
+	screen = pygame.display.set_mode((500, 560))
 
 # PLAYING -------------------------------------------------
 
