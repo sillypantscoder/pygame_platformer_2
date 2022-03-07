@@ -83,22 +83,27 @@ def SELECTOR(header, items: list):
 
 gennewworld = True
 alwaystick = True
+doSpawning = True
 
 def WORLDSELECTION():
 	global gennewworld
 	global alwaystick
+	global doSpawning
 	gennewworld = True
 	alwaystick = True
+	doSpawning = True
 	running = True
 	while running:
-		option = SELECTOR("Platformer", ["Play >", "", "Generate new world: " + str(gennewworld), "Always tick entities: " + str(alwaystick), "", "Extensions"])
+		option = SELECTOR("Platformer", ["Play >", "", "Generate new world: " + str(gennewworld), "Always tick entities: " + str(alwaystick), "Spawning: " + str(doSpawning), "", "Extensions"])
 		if option == 0:
 			running = False
 		elif option == 2:
 			gennewworld = not gennewworld
 		elif option == 3:
 			alwaystick = not alwaystick
-		elif option == 5:
+		elif option == 4:
+			doSpawning = not doSpawning
+		elif option == 6:
 			EXTENSIONS()
 		c.tick(60)
 		pygame.display.flip()
@@ -594,7 +599,7 @@ def PLAYING():
 		for s in sets:
 			WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
 		# Spawning
-		if random.random() < 0.001:
+		if doSpawning and random.random() < 0.001:
 			Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 		# Players & Screen
 		player.tick()
