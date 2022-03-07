@@ -155,7 +155,7 @@ def EXTENSIONS():
 		else:
 			option = SELECTOR("Extensions", ["Back", "", "Current extension: " + currentExtension, "Remove extension"])
 			if option == 0: running = False
-			elif option == 3: system("python3 updateenv.py --remove-extension")
+			elif option == 3: system("python3 updateenv.py --remove-extension --rm-hard")
 
 # PLAYING -------------------------------------------------------------------------------------------------------------------------------------------
 

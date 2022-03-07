@@ -8,6 +8,8 @@ if "--remove-extension" in sys.argv:
 	x.append("meta.txt", "(No extension installed)\n")
 	x.writetofile("extension.zip")
 	print("Removed extension:", rawExtension["meta.txt"].decode("UTF-8")[:-1])
+	if "--rm-hard" in sys.argv:
+		os.system("git restore style_env.zip extension.zip")
 if "--add-extension" in sys.argv:
 	extension = sys.argv[sys.argv.index("--add-extension") + 1] + ".zip"
 	extensions = os.listdir("extensions")
