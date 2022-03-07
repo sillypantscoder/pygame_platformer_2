@@ -31,7 +31,7 @@ def MAIN():
 
 # SELECTOR SCRIPT
 
-def SELECTOR(items: list):
+def SELECTOR(header, items: list):
 	global screen
 	if 40 * len(items) > 560:
 		screen = pygame.display.set_mode((500, 40 * len(items)))
@@ -39,14 +39,19 @@ def SELECTOR(items: list):
 	while running:
 		pos = pygame.mouse.get_pos()
 		screen.fill(WHITE)
+		# Header
+		pygame.draw.rect(screen, BLACK, pygame.Rect(0, 0, 500, 40))
+		w = FONT.render(header, True, WHITE)
+		screen.blit(w, (0, 0))
+		# Items
 		h = 0
 		for i in items:
+			h += 40
 			w = FONT.render(i, True, BLACK)
 			if math.floor(pos[1] / 40) * 40 == h:
 				w = FONT.render(i, True, WHITE)
 				pygame.draw.rect(screen, BLACK, pygame.Rect(0, h, 500, 40))
 			screen.blit(w, (0, h))
-			h += 40
 		# Events
 		for event in pygame.event.get():
 				if event.type == pygame.QUIT:
@@ -54,8 +59,8 @@ def SELECTOR(items: list):
 					# User clicked close button
 				if event.type == pygame.MOUSEBUTTONUP:
 					pos = pygame.mouse.get_pos()
-					if pos[1] < len(items) * 40:
-						return math.floor(pos[1] / 40)
+					if pos[1] - 40 < len(items) * 40:
+						return math.floor((pos[1] - 40) / 40)
 		c.tick(60)
 		pygame.display.flip()
 	screen = pygame.display.set_mode([500, 570])
@@ -71,13 +76,11 @@ def WORLDSELECTION():
 	global alwaystick
 	running = True
 	while running:
-		option = SELECTOR(["Play >", "", "Generate new world: " + str(gennewworld), "Always tick entities: " + str(alwaystick)])
+		option = SELECTOR("Platformer", ["Play >", "", "Generate new world: " + str(gennewworld)])
 		if option == 0:
 			running = False
 		elif option == 2:
 			gennewworld = not gennewworld
-		elif option == 3:
-			alwaystick = not alwaystick
 		c.tick(60)
 		pygame.display.flip()
 
@@ -96,7 +99,7 @@ def GENERATORSELECTION():
 				items[filename[11:]] = rawStyleItems[filename].decode("UTF-8")
 				itemNames.append(filename[11:])
 	if gennewworld:
-		option = SELECTOR(items)
+		option = SELECTOR("Select Generator", items)
 		f = open("generator.py", "w")
 		f.write(items[itemNames[option]])
 		f.close()
