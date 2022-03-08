@@ -6,6 +6,10 @@ tfind=$"\n M";
 if [[ $"\n$status" == *"$tfind"* ]]; then
 	echo "WARNING: There are changes in the current directory that may conflict with incoming changes:"
 	git status -s
+	echo
+	echo "To fix this, type the following into the terminal and press Enter:"
+	echo "  git reset --hard -q"
+	echo "Then type 'sh play.sh' (if that's how you got here) and try updating again."
 	exit 1
 fi
 
