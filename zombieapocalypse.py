@@ -7,6 +7,7 @@ import math
 import datetime
 import zipHelpers
 from basics import *
+import worldeditor
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -20,8 +21,17 @@ c = pygame.time.Clock()
 screen = pygame.display.set_mode([500, 570])
 
 def MAIN():
+	global things
+	global player
+	global items
 	c = True
 	while c:
+		things = []
+		player = Player(100, 0)
+		items = {
+			"danger": 0,
+			"score": 0
+		}
 		WORLDSELECTION()
 		GENERATORSELECTION()
 		c = PLAYING()
@@ -75,11 +85,13 @@ def SELECTOR(header, items: list):
 
 gennewworld = True
 alwaystick = True
+doSpawning = True
 autoapocalypse = False
 
 def WORLDSELECTION():
 	global gennewworld
 	global alwaystick
+	global doSpawning
 	global autoapocalypse
 	running = True
 	while running:
@@ -126,12 +138,8 @@ def GENERATORSELECTION():
 				if x % 2 == 0 and y % 2 == 0: WORLD[x].append("hard_stone")
 				elif x % 2 == 0 or y % 2 == 0: WORLD[x].append(random.choice(["hard_stone", "air", "air", "tnt"]))
 				else: WORLD[x].append("air")
-		f = open("world.json", "w")
-		f.write(json.dumps(WORLD).replace("], [", 	"],\n ["))
-		f.close()
-	f = open("world.json", "r")
-	WORLD = json.loads(f.read())
-	f.close()
+		worldeditor.save(WORLD)
+	WORLD = worldeditor.load()
 
 # EXTENSION MANAGER
 

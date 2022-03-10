@@ -4,6 +4,7 @@ import json
 import zipHelpers
 from basics import *
 from os import system
+import worldeditor
 
 pygame.font.init()
 
@@ -26,9 +27,7 @@ c = pygame.time.Clock()
 
 screen = pygame.display.set_mode([min(max(500, len(pallete) * CELLSIZE), 2000), 500 + CELLSIZE])
 
-f = open("world.json", "r")
-WORLD = json.loads(f.read())
-f.close()
+WORLD = worldeditor.load()
 
 # PLAYING -------------------------------------------------
 
@@ -114,6 +113,4 @@ while running:
 	c.tick(60)
 pygame.quit()
 
-f = open("world.json", "w")
-f.write(json.dumps(WORLD).replace("], [", "],\n ["))
-f.close()
+worldeditor.save(WORLD)

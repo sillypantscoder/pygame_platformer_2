@@ -7,6 +7,7 @@ import math
 import datetime
 import zipHelpers
 from basics import *
+import worldeditor
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -145,9 +146,7 @@ def GENERATORSELECTION():
 		f.close()
 		system("python3 generator.py")
 		system("rm generator.py")
-	f = open("world.json", "r")
-	WORLD = json.loads(f.read())
-	f.close()
+	WORLD = worldeditor.load()
 
 # EXTENSION MANAGER
 
