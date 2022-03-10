@@ -27,10 +27,9 @@ def MAIN():
 	c = True
 	while c:
 		things = []
-		player = Player(100, 0)
+		player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
 		items = {
-			"danger": 0,
-			"score": 0
+			"gem": 0
 		}
 		WORLDSELECTION()
 		GENERATORSELECTION()
@@ -95,11 +94,12 @@ def WORLDSELECTION():
 	global autoapocalypse
 	running = True
 	while running:
-		option = SELECTOR("Platformer", ["Play >", "", "Generate new world: " + str(gennewworld), "Auto Apocalypse: " + str(autoapocalypse), "", "Extensions"])
+		option = SELECTOR("Platformer", ["New world >", "Load save file >", "", "Auto Apocalypse: " + str(autoapocalypse), "", "Extensions"])
 		if option == 0:
 			running = False
-		elif option == 2:
-			gennewworld = not gennewworld
+		elif option == 1:
+			gennewworld = False
+			running = False
 		elif option == 3:
 			autoapocalypse = not autoapocalypse
 		elif option == 5:

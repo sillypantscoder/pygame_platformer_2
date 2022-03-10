@@ -95,11 +95,12 @@ def WORLDSELECTION():
 	doSpawning = True
 	running = True
 	while running:
-		option = SELECTOR("Platformer", ["Play >", "", "Generate new world: " + str(gennewworld), "Always tick entities: " + str(alwaystick), "Spawning: " + str(doSpawning), "", "Extensions"])
+		option = SELECTOR("Platformer", ["New world >", "Load save file >", "", "Always tick entities: " + str(alwaystick), "Spawning: " + str(doSpawning), "", "Extensions"])
 		if option == 0:
 			running = False
-		elif option == 2:
-			gennewworld = not gennewworld
+		elif option == 1:
+			gennewworld = False
+			running = False
 		elif option == 3:
 			alwaystick = not alwaystick
 		elif option == 4:
