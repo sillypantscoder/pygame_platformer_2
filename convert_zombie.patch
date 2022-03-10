@@ -1,0 +1,263 @@
+21c21
+< screen = pygame.display.set_mode([500, 560])
+---
+> screen = pygame.display.set_mode([500, 570])
+37a38
+> 	ENDGAME()
+43c44
+< 	scrn_height = 560
+---
+> 	scrn_height = 570
+45c46
+< 	if 40 * (len(items) + 1) > 560:
+---
+> 	if 40 * (len(items) + 1) > 570:
+78c79
+< 						screen = pygame.display.set_mode([500, 560])
+---
+> 						screen = pygame.display.set_mode([500, 570])
+87a89
+> autoapocalypse = False
+93,95c95
+< 	gennewworld = True
+< 	alwaystick = True
+< 	doSpawning = True
+---
+> 	global autoapocalypse
+98c98
+< 		option = SELECTOR("Platformer", ["Play >", "", "Generate new world: " + str(gennewworld), "Always tick entities: " + str(alwaystick), "Spawning: " + str(doSpawning), "", "Extensions"])
+---
+> 		option = SELECTOR("Platformer", ["Play >", "", "Generate new world: " + str(gennewworld), "Auto Apocalypse: " + str(autoapocalypse), "", "Extensions"])
+104,107c104,105
+< 			alwaystick = not alwaystick
+< 		elif option == 4:
+< 			doSpawning = not doSpawning
+< 		elif option == 6:
+---
+> 			autoapocalypse = not autoapocalypse
+> 		elif option == 5:
+135,141d132
+< 	items = {}
+< 	itemNames = []
+< 	for filename in rawStyleItems:
+< 		if "generators/" in filename:
+< 			if filename != "generators/":
+< 				items[filename[11:]] = rawStyleItems[filename].decode("UTF-8")
+< 				itemNames.append(filename[11:])
+143,148c134,141
+< 		option = SELECTOR("Select Generator", items)
+< 		f = open("generator.py", "w")
+< 		f.write(items[itemNames[option]])
+< 		f.close()
+< 		system("python3 generator.py")
+< 		system("rm generator.py")
+---
+> 		WORLD = []
+> 		for x in range(BOARDSIZE[0]):
+> 			WORLD.append([])
+> 			for y in range(BOARDSIZE[1]):
+> 				if x % 2 == 0 and y % 2 == 0: WORLD[x].append("hard_stone")
+> 				elif x % 2 == 0 or y % 2 == 0: WORLD[x].append(random.choice(["hard_stone", "air", "air", "tnt"]))
+> 				else: WORLD[x].append("air")
+> 		worldeditor.save(WORLD)
+324c317,318
+< 			self.die()
+---
+> 			self.x = (BOARDSIZE[0] / 2) * CELLSIZE
+> 			self.y = (BOARDSIZE[1] / 2) * CELLSIZE
+352a347,356
+> 	def draw(self, playerx, playery):
+> 		mvx = 250 - playerx
+> 		mvy = 280 - playery
+> 		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((mvx, mvy)))
+> 		if self.memory["target"]:
+> 			color = GREEN
+> 			if isinstance(self.memory["target"], Monster): color = RED
+> 			pygame.draw.line(screen, color, (self.x + mvx + 5, self.y + mvy + 5), (self.memory["target"].x + mvx + 5, self.memory["target"].y + mvy + 5))
+> 	def initmemory(self):
+> 		self.memory = {"health": 100, "direction": None, "target": None}
+355,364c359,398
+< 		keys = pygame.key.get_pressed()
+< 		if keys[pygame.K_LEFT]:
+< 			self.vx -= 1
+< 		if keys[pygame.K_RIGHT]:
+< 			self.vx += 1
+< 		if keys[pygame.K_UP] and self.canjump:
+< 			self.vy = -3.1
+< 	def die(self):
+< 		self.x = 100
+< 		self.y = 0
+---
+> 		if autoapocalypse:
+> 			# Find a target.
+> 			target = None
+> 			targetdist = 1000
+> 			for t in things:
+> 				dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
+> 				# Find the closest Item or Monster within screen size.
+> 				if (dist < targetdist) and (isinstance(t, Item) or (isinstance(t, Monster) and dist < CELLSIZE * 5)):
+> 					target = t
+> 					targetdist = dist
+> 			self.memory["target"] = target
+> 			if isinstance(target, Item):
+> 				# Go left or right depending on where the target is.
+> 				if target.x < self.x:
+> 					self.vx -= 1
+> 				else: self.vx += 1
+> 				# If the target is more than half a block above me, jump.
+> 				if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
+> 			elif isinstance(target, Monster):
+> 				# Go right or left depending on where the target is.
+> 				if target.x < self.x:
+> 					self.vx += 1
+> 				else: self.vx -= 1
+> 				# If the target is not more than half a block above me, jump.
+> 				if target.y - self.y >= -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
+> 			else:
+> 				if self.canjump and random.random() < 0.06: self.vy = -3.1
+> 				if self.memory["direction"]:
+> 					self.vx += self.memory["direction"]
+> 					if random.random() < 0.1: self.memory["direction"] = None
+> 				else:
+> 					self.memory["direction"] = random.choice([1, -1])
+> 		else:
+> 			keys = pygame.key.get_pressed()
+> 			if keys[pygame.K_LEFT]:
+> 				self.vx -= 1
+> 			if keys[pygame.K_RIGHT]:
+> 				self.vx += 1
+> 			if keys[pygame.K_UP] and self.canjump:
+> 				self.vy = -3.1
+369a404,406
+> 	def tickmove(self):
+> 		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(player.x, player.y, 10, 10)):
+> 			player.memory["health"] -= 1
+371,376c408,415
+< 		if self.canjump and random.random() < 0.06: self.vy = -3.1
+< 		if self.memory["direction"]:
+< 			self.vx += self.memory["direction"]
+< 			if random.random() < 0.1: self.memory["direction"] = None
+< 		else:
+< 			self.memory["direction"] = random.choice([1, -1])
+---
+> 		# Find a target.
+> 		target = player
+> 		# Go left or right depending on where the target is.
+> 		if target.x < self.x:
+> 			self.vx -= 1
+> 		else: self.vx += 1
+> 		# If the target is more than half a block above me, jump.
+> 		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
+381,393d419
+< class ExplodingMonster(Monster):
+< 	color = (0, 255, 0)
+< 	def despawn(self):
+< 		self.createExplosion(3)
+< 		for i in range(random.choice([0, 1, 2, 3])):
+< 			self.drop(ScoreItem)
+< 
+< class Spawner(Entity):
+< 	color = (0, 0, 150)
+< 	def tickmove(self):
+< 		if random.random() < 0.1: Monster(self.x, self.y)
+< 		if random.random() < 0.005: ExplodingMonster(self.x, self.y)
+< 
+396c422
+< 		self.memory = {"img": "danger", "img_surface": None}
+---
+> 		self.memory = {"img": "gem", "img_surface": None}
+412,415d437
+< class ScoreItem(Item):
+< 	def initmemory(self):
+< 		self.memory = {"img": "score", "img_surface": None, "stacksize": 1}
+< 
+472a495,496
+> 		# 1% chance kill myself.
+> 		if random.random() < 0.01: self.die()
+474,477c498,513
+< class AllaySpawner(Entity):
+< 	color = (0, 100, 150)
+< 	def tickmove(self):
+< 		if random.random() < 0.1: Allay(self.x, self.y)
+---
+> def ENDGAME():
+> 	global player
+> 	wc = FONT.render("Click anywhere to exit", True, BLACK)
+> 	while True:
+> 		for event in pygame.event.get():
+> 			if event.type == pygame.QUIT:
+> 				return;
+> 				# User clicked close button
+> 			if event.type == pygame.MOUSEBUTTONUP:
+> 				return;
+> 		screen.fill(WHITE)
+> 		w = FONT.render(f"Score: {str(items['gem'])}", True, BLACK)
+> 		screen.blit(w, (CELLSIZE, CELLSIZE))
+> 		screen.blit(wc, (CELLSIZE, CELLSIZE + w.get_height() + 10))
+> 		pygame.display.flip()
+> 		c.tick(60)
+485c521
+< player = Player(100, 0)
+---
+> player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
+487,488c523
+< 	"danger": 0,
+< 	"score": 0
+---
+> 	"gem": 0
+503d537
+< 				pygame.quit()
+506,510d539
+< 			if event.type == pygame.MOUSEBUTTONUP:
+< 				pos = pygame.mouse.get_pos()
+< 				if items["danger"] >= 15:
+< 					items["danger"] -= 15
+< 					Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250))
+514,520c543,545
+< 					if items["danger"] >= 10:
+< 						items["danger"] -= 10
+< 						player.createExplosion(2)
+< 				if keys[pygame.K_z]:
+< 					if items["danger"] >= 5:
+< 						items["danger"] -= 5
+< 						Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+---
+> 					for zzz in range(30):
+> 						pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+> 						Monster(*pos)
+523c548
+< 						if isinstance(t, (Item, Monster, Spawner, Particle)) and not isinstance(t, ScoreItem):
+---
+> 						if isinstance(t, (Item, Monster, Particle)):
+525,526d549
+< 				if keys[pygame.K_w]:
+< 					AllaySpawner(player.x, player.y)
+528a552,553
+> 		if keys[pygame.K_w]:
+> 			Allay(player.x, player.y)
+601,602c626,629
+< 		if doSpawning and random.random() < 0.001:
+< 			Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+---
+> 		if random.random() < (0.01 * items["gem"]) + 0.05:
+> 			pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+> 			Monster(*pos)
+> 			Particle(*pos)
+612c639
+< 			if random.random() < 0.005 and not isinstance(t, Item):
+---
+> 			if random.random() < 0.005:
+616a644
+> 		if player.memory["health"] <= 0: return False
+628c656
+< 		w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
+---
+> 		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
+631a660,662
+> 		# Health bar
+> 		pygame.draw.rect(screen, RED, pygame.Rect(0, 560, 500, 10))
+> 		pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * 5, 10))
+689c720
+< 		w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
+---
+> 		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
