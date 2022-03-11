@@ -150,7 +150,7 @@ def GENERATORSELECTION():
 	# WORLD LOADING
 	WORLD, e, playerpos = worldeditor.load()
 	for t in e:
-		entities.append({
+		newEntity = {
 			"monster": Monster,
 			"exploding_monster": ExplodingMonster,
 			"spawner": Spawner,
@@ -158,7 +158,8 @@ def GENERATORSELECTION():
 			"item_score": ScoreItem,
 			"allay": Allay,
 			"allay_spawner": AllaySpawner
-		}[t[0]](t[1], t[2]))
+		}[t[0]]
+		newEntity(t[1], t[2])
 	player.x, player.y = playerpos
 
 # EXTENSION MANAGER
@@ -259,8 +260,8 @@ class Entity:
 		self.canjump = False
 		self.ticking = True
 		self.memory = None
-		self.initmemory()
 		entities.append(self)
+		self.initmemory()
 	def draw(self, playerx, playery):
 		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 280 - playery)))
 	def tick(self):
@@ -375,8 +376,8 @@ class Player(Entity):
 			pygame.draw.line(screen, color, (self.x + mvx + 5, self.y + mvy + 5), (self.memory["target"].x + mvx + 5, self.memory["target"].y + mvy + 5))
 	def initmemory(self):
 		self.memory = {"health": 100, "direction": None, "target": None}
+		entities.remove(self)
 	def tickmove(self):
-		if self in entities: entities.remove(self)
 		if autoapocalypse:
 			# Find a target.
 			target = None
