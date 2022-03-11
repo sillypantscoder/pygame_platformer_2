@@ -39,7 +39,7 @@ def MAIN():
 		for n in entities:
 			if n.save_as != None:
 				e.append([n.save_as, n.x, n.y])
-		worldeditor.save(WORLD, e, [player.x, player.y])
+		worldeditor.save(WORLD, e, [player.x, player.y], items)
 		ENDGAME()
 
 # SELECTOR SCRIPT
@@ -128,6 +128,7 @@ def GENERATORSELECTION():
 	global textures
 	global entities
 	global player
+	global items
 	rawStyleItems = zipHelpers.extract_zip("style_env.zip").items
 	BLOCKS = json.loads(rawStyleItems["blocks.json"].decode("UTF-8"))
 	for filename in rawStyleItems:
@@ -138,17 +139,22 @@ def GENERATORSELECTION():
 				except:
 					print(filename)
 					exit(1)
+	generators = {}
+	itemNames = []
+	for filename in rawStyleItems:
+		if "generators/" in filename:
+			if filename != "generators/":
+				generators[filename[11:]] = rawStyleItems[filename].decode("UTF-8")
+				itemNames.append(filename[11:])
 	if gennewworld:
-		WORLD = []
-		for x in range(BOARDSIZE[0]):
-			WORLD.append([])
-			for y in range(BOARDSIZE[1]):
-				if x % 2 == 0 and y % 2 == 0: WORLD[x].append("hard_stone")
-				elif x % 2 == 0 or y % 2 == 0: WORLD[x].append(random.choice(["hard_stone", "air", "air", "tnt"]))
-				else: WORLD[x].append("air")
-		worldeditor.save(WORLD, [])
+		option = SELECTOR("Select Generator", generators)
+		f = open("generator.py", "w")
+		f.write(generators[itemNames[option]])
+		f.close()
+		system("python3 generator.py")
+		system("rm generator.py")
 	# WORLD LOADING
-	WORLD, e, playerpos = worldeditor.load()
+	WORLD, e, playerpos, i = worldeditor.load()
 	for t in e:
 		newEntity = {
 			"monster": Monster,
@@ -161,6 +167,9 @@ def GENERATORSELECTION():
 		}[t[0]]
 		newEntity(t[1], t[2])
 	player.x, player.y = playerpos
+	for n in i.keys():
+		for z in range(i[n]):
+			gainitem(n)
 
 # EXTENSION MANAGER
 
@@ -375,7 +384,7 @@ class Player(Entity):
 			if isinstance(self.memory["target"], Monster): color = RED
 			pygame.draw.line(screen, color, (self.x + mvx + 5, self.y + mvy + 5), (self.memory["target"].x + mvx + 5, self.memory["target"].y + mvy + 5))
 	def initmemory(self):
-		self.memory = {"health": 100, "direction": None, "target": None}
+		self.memory = {"health": maxhealth, "direction": None, "target": None}
 		entities.remove(self)
 	def tickmove(self):
 		if autoapocalypse:
@@ -571,6 +580,7 @@ def gainitem(item):
 		items[item] = 0
 	items[item] += 1
 
+maxhealth = 10000
 entities = []
 player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
 items = {
@@ -594,9 +604,9 @@ def PLAYING():
 			if event.type == pygame.KEYDOWN:
 				keys = pygame.key.get_pressed()
 				if keys[pygame.K_SPACE]:
-					for zzz in range(30):
-						pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
-						Monster(*pos)
+					if items["danger"] >= 10:
+						items["danger"] -= 10
+						player.createExplosion(2)
 				if keys[pygame.K_q]:
 					for t in entities:
 						if isinstance(t, (Item, Monster, Particle)):
@@ -605,6 +615,10 @@ def PLAYING():
 					if PAUSE(): return True;
 		if keys[pygame.K_w]:
 			Allay(player.x, player.y)
+		if keys[pygame.K_z]:
+			if items["danger"] >= 5:
+				items["danger"] -= 5
+				Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 		# DRAWING ------------
 		screen.fill(GRAY)
 		totalScreen.fill(WHITE)
@@ -695,7 +709,7 @@ def PLAYING():
 			# Dying
 			elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 				t.die()
-		if player.memory["health"] <= 0: return False
+		if player.memory["health"] <= 0: return True
 		# FLIP -----------------
 		# Framerate
 		if tickingrefresh == 1:
@@ -713,7 +727,7 @@ def PLAYING():
 		screen.blit(w, (0, BOARDSIZE[1]))
 		# Health bar
 		pygame.draw.rect(screen, RED, pygame.Rect(0, 560, 500, 10))
-		pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * 5, 10))
+		pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * (500 / maxhealth), 10))
 		# Flip
 		pygame.display.flip()
 		c.tick(60)

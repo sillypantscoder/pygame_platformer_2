@@ -19,7 +19,7 @@ pos = 0
 for id in BLOCKS:
 	pallete.append({"color": BLOCKS[id]["color"], "id": id, "rect": pygame.Rect(CELLSIZE * pos, 0, CELLSIZE, CELLSIZE)})
 	pos += 1
-selectedbrush = 0
+selectedbrush = "air"
 
 WORLD = [[random.choice(["air", "stone"]) for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
@@ -27,7 +27,7 @@ c = pygame.time.Clock()
 
 screen = pygame.display.set_mode([min(max(500, len(pallete) * CELLSIZE), 2000), 500 + CELLSIZE])
 
-WORLD = worldeditor.load()
+WORLD, entities, playerpos, items = worldeditor.load()
 
 # PLAYING -------------------------------------------------
 
@@ -98,6 +98,13 @@ while running:
 				selectedx = x
 				selectedy = y
 				pygame.draw.rect(totalScreen, RED, pygame.Rect(x * CELLSIZE, y * CELLSIZE, CELLSIZE, CELLSIZE), 10)
+	# Entities
+	for e in entities:
+		pygame.draw.circle(totalScreen, GREEN, (e[1], e[2]), 5)
+		pygame.draw.circle(totalScreen, BLACK, (e[1], e[2]), 5, 1)
+		if pygame.Rect(e[1] - 6, e[2] - 5, 10, 10).collidepoint(pos):
+			pygame.draw.circle(totalScreen, BLUE, (e[1], e[2]), 5, 2)
+			totalScreen.blit(FONT.render(e[0], True, BLACK), pos)
 	# Player
 	pygame.draw.rect(screen, LIGHTRED, pygame.Rect(*playerpos, 10, 10).move((250 - playerpos[0], 250 - playerpos[1])))
 	pygame.draw.rect(totalScreen, RED, pygame.Rect(*playerpos, 10, 10))
@@ -113,4 +120,4 @@ while running:
 	c.tick(60)
 pygame.quit()
 
-worldeditor.save(WORLD)
+worldeditor.save(WORLD, entities, playerpos, items)
