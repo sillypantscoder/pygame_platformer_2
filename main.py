@@ -222,7 +222,9 @@ def insideBoard(x, y):
 	if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: return False
 	return True
 
-def explosion(cx, cy, rad):
+def explosion(float_cx, float_cy, rad):
+	cx = round(float_cx)
+	cy = round(float_cy)
 	if not insideBoard(cx, cy): return
 	if WORLD[cx][cy] not in BLOCKS: return
 	WORLD[cx][cy] = BLOCKS[WORLD[cx][cy]]["explosion"]
@@ -240,8 +242,8 @@ def explosion(cx, cy, rad):
 				MovingBlock(x * CELLSIZE, y * CELLSIZE).memory["block"] = WORLD[x][y]
 			WORLD[x][y] = BLOCKS[WORLD[x][y]]["explosion"]
 	for t in [player, *entities]:
-		dx = t.x - ((cx + 0.5) * CELLSIZE)
-		dy = t.y - ((cy + 0.5) * CELLSIZE)
+		dx = t.x - ((float_cx) * CELLSIZE)
+		dy = t.y - ((float_cy + 0.2) * CELLSIZE)
 		distanceFromExplosion = math.sqrt(dx ** 2 + dy ** 2)
 		if distanceFromExplosion < (rad + 1) * CELLSIZE:
 			dirx = dx / distanceFromExplosion if distanceFromExplosion > 0 else 0
@@ -250,8 +252,9 @@ def explosion(cx, cy, rad):
 			# if it's close to the explosion, it should fly out faster.
 			# if it's far from the explosion, it should be less affected.
 			# if t.x < cx (it's on the left of the explosion), then dx is negative
-			dvx = dirx * (rad - (distanceFromExplosion/CELLSIZE)) * 8
-			dvy = diry * (rad - (distanceFromExplosion/CELLSIZE)) * 8
+			power = 9
+			dvx = dirx * (rad - (distanceFromExplosion/CELLSIZE)) * power * 2
+			dvy = diry * (rad - (distanceFromExplosion/CELLSIZE)) * power
 			t.vx += dvx
 			t.vy += dvy
 	for l in more:
@@ -367,7 +370,7 @@ class Entity:
 	def getBlock(self):
 		return (round(self.x / CELLSIZE), round(self.y / CELLSIZE))
 	def createExplosion(self, rad):
-		explosion(*self.getBlock(), rad)
+		explosion(self.x / CELLSIZE, self.y / CELLSIZE, rad)
 	def opt_ai_calc(self):
 		pass
 	def drop(self, item):
@@ -561,9 +564,9 @@ def PLAYING():
 				if keys[pygame.K_ESCAPE]:
 					if PAUSE(): return True;
 		if keys[pygame.K_z]:
-					if items["danger"] >= 5:
-						items["danger"] -= 5
-						Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+			if items["danger"] >= 5:
+				items["danger"] -= 5
+				Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 		# DRAWING ------------
 		screen.fill(GRAY)
 		totalScreen.fill(WHITE)

@@ -41,12 +41,12 @@
 ---
 > 			autoapocalypse = not autoapocalypse
 > 		elif option == 5:
-351c348,349
+354c351,352
 < 			self.die()
 ---
 > 			self.x = (BOARDSIZE[0] / 2) * CELLSIZE
 > 			self.y = (BOARDSIZE[1] / 2) * CELLSIZE
-379a378,385
+382a381,388
 > 	def draw(self, playerx, playery):
 > 		mvx = 250 - playerx
 > 		mvy = 280 - playery
@@ -55,9 +55,9 @@
 > 			color = GREEN
 > 			if isinstance(self.memory["target"], Monster): color = RED
 > 			pygame.draw.line(screen, color, (self.x + mvx + 5, self.y + mvy + 5), (self.memory["target"].x + mvx + 5, self.memory["target"].y + mvy + 5))
-380a387
+383a390
 > 		self.memory = {"health": maxhealth, "direction": None, "target": None}
-383,392c390,429
+386,395c393,432
 < 		keys = pygame.key.get_pressed()
 < 		if keys[pygame.K_LEFT]:
 < 			self.vx -= 1
@@ -109,11 +109,11 @@
 > 				self.vx += 1
 > 			if keys[pygame.K_UP] and self.canjump:
 > 				self.vy = -3.1
-398a436,438
+401a439,441
 > 	def tickmove(self):
 > 		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(player.x, player.y, 10, 10)):
 > 			player.memory["health"] -= 1
-400,405c440,447
+403,408c443,450
 < 		if self.canjump and random.random() < 0.06: self.vy = -3.1
 < 		if self.memory["direction"]:
 < 			self.vx += self.memory["direction"]
@@ -129,14 +129,14 @@
 > 		else: self.vx += 1
 > 		# If the target is more than half a block above me, jump.
 > 		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
-428c470
+431c473
 < 		self.memory = {"img": "danger", "img_surface": None}
 ---
 > 		self.memory = {"img": "gem", "img_surface": None}
-504a547,548
+507a550,551
 > 		# 1% chance kill myself.
 > 		if random.random() < 0.01: self.die()
-510a555,571
+513a558,574
 > def ENDGAME():
 > 	global player
 > 	wc = FONT.render("Click anywhere to exit", True, BLACK)
@@ -154,44 +154,36 @@
 > 		pygame.display.flip()
 > 		c.tick(60)
 > 
-521a583
+524a586
 > maxhealth = 10000
-523c585
+526c588
 < player = Player(100, 0)
 ---
 > player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
-525,526c587
+528,529c590
 < 	"danger": 0,
 < 	"score": 0
 ---
 > 	"gem": 0
-541d601
+544d604
 < 				pygame.quit()
-544,548d603
+547,551d606
 < 			if event.type == pygame.MOUSEBUTTONUP:
 < 				pos = pygame.mouse.get_pos()
 < 				if items["danger"] >= 15:
 < 					items["danger"] -= 15
 < 					Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250))
-557c612
+560c615
 < 						if isinstance(t, (Item, Monster, Spawner, Particle)) and not isinstance(t, ScoreItem):
 ---
 > 						if isinstance(t, (Item, Monster, Particle)):
-559,560d613
+562,563d616
 < 				if keys[pygame.K_w]:
 < 					AllaySpawner(player.x, player.y)
-562a616,617
+565a619,620
 > 		if keys[pygame.K_w]:
 > 			Allay(player.x, player.y)
-564,566c619,621
-< 					if items["danger"] >= 5:
-< 						items["danger"] -= 5
-< 						Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
----
-> 			if items["danger"] >= 5:
-> 				items["danger"] -= 5
-> 				Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
-639,640c694,697
+642,643c697,700
 < 		if doSpawning and random.random() < 0.001:
 < 			Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 ---
@@ -199,21 +191,21 @@
 > 			pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 > 			Monster(*pos)
 > 			Particle(*pos)
-650c707
+653c710
 < 			if random.random() < 0.005 and not isinstance(t, Item):
 ---
 > 			if random.random() < 0.005:
-654a712
+657a715
 > 		if player.memory["health"] <= 0: return True
-666c724
+669c727
 < 		w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
 ---
 > 		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
-669a728,730
+672a731,733
 > 		# Health bar
 > 		pygame.draw.rect(screen, RED, pygame.Rect(0, 560, 500, 10))
 > 		pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * (500 / maxhealth), 10))
-727c788
+730c791
 < 		w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
 ---
 > 		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
