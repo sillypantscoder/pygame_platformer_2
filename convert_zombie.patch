@@ -23,17 +23,17 @@
 > 						screen = pygame.display.set_mode([500, 570])
 93a94
 > autoapocalypse = False
-99,101c100
+102,104c103
 < 	gennewworld = True
 < 	alwaystick = True
 < 	doSpawning = True
 ---
 > 	global autoapocalypse
-104c103
+107c106
 < 		option = SELECTOR("Platformer", ["New world >", "Load save file >", "", "Always tick entities: " + str(alwaystick), "Spawning: " + str(doSpawning), "", "Extensions"])
 ---
-> 		option = SELECTOR("Platformer", ["New world >", "Load save file >", "", "Auto Apocalypse: " + str(autoapocalypse), "", "Extensions"])
-111,114c110,111
+> 		option = SELECTOR("Zombie Apocalypse Mode", ["New world >", "Load save file >", "", "Auto Apocalypse: " + str(autoapocalypse), "", "Extensions"])
+114,117c113,114
 < 			alwaystick = not alwaystick
 < 		elif option == 4:
 < 			doSpawning = not doSpawning
@@ -41,12 +41,12 @@
 ---
 > 			autoapocalypse = not autoapocalypse
 > 		elif option == 5:
-354c351,352
+357c354,355
 < 			self.die()
 ---
 > 			self.x = (BOARDSIZE[0] / 2) * CELLSIZE
 > 			self.y = (BOARDSIZE[1] / 2) * CELLSIZE
-382a381,388
+385a384,391
 > 	def draw(self, playerx, playery):
 > 		mvx = 250 - playerx
 > 		mvy = 280 - playery
@@ -55,9 +55,9 @@
 > 			color = GREEN
 > 			if isinstance(self.memory["target"], Monster): color = RED
 > 			pygame.draw.line(screen, color, (self.x + mvx + 5, self.y + mvy + 5), (self.memory["target"].x + mvx + 5, self.memory["target"].y + mvy + 5))
-383a390
+386a393
 > 		self.memory = {"health": maxhealth, "direction": None, "target": None}
-386,395c393,432
+389,398c396,435
 < 		keys = pygame.key.get_pressed()
 < 		if keys[pygame.K_LEFT]:
 < 			self.vx -= 1
@@ -109,11 +109,11 @@
 > 				self.vx += 1
 > 			if keys[pygame.K_UP] and self.canjump:
 > 				self.vy = -3.1
-401a439,441
+404a442,444
 > 	def tickmove(self):
 > 		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(player.x, player.y, 10, 10)):
 > 			player.memory["health"] -= 1
-403,408c443,450
+406,411c446,453
 < 		if self.canjump and random.random() < 0.06: self.vy = -3.1
 < 		if self.memory["direction"]:
 < 			self.vx += self.memory["direction"]
@@ -129,14 +129,14 @@
 > 		else: self.vx += 1
 > 		# If the target is more than half a block above me, jump.
 > 		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
-431c473
+434c476
 < 		self.memory = {"img": "danger", "img_surface": None}
 ---
 > 		self.memory = {"img": "gem", "img_surface": None}
-507a550,551
+510a553,554
 > 		# 1% chance kill myself.
 > 		if random.random() < 0.01: self.die()
-513a558,574
+516a561,577
 > def ENDGAME():
 > 	global player
 > 	wc = FONT.render("Click anywhere to exit", True, BLACK)
@@ -154,36 +154,36 @@
 > 		pygame.display.flip()
 > 		c.tick(60)
 > 
-524a586
-> maxhealth = 10000
-526c588
+527a589
+> maxhealth = 100
+529c591
 < player = Player(100, 0)
 ---
 > player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
-528,529c590
+531,532c593
 < 	"danger": 0,
 < 	"score": 0
 ---
 > 	"gem": 0
-544d604
+547d607
 < 				pygame.quit()
-547,551d606
+550,554d609
 < 			if event.type == pygame.MOUSEBUTTONUP:
 < 				pos = pygame.mouse.get_pos()
 < 				if items["danger"] >= 15:
 < 					items["danger"] -= 15
 < 					Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250))
-560c615
+563c618
 < 						if isinstance(t, (Item, Monster, Spawner, Particle)) and not isinstance(t, ScoreItem):
 ---
 > 						if isinstance(t, (Item, Monster, Particle)):
-562,563d616
+565,566d619
 < 				if keys[pygame.K_w]:
 < 					AllaySpawner(player.x, player.y)
-565a619,620
+568a622,623
 > 		if keys[pygame.K_w]:
 > 			Allay(player.x, player.y)
-642,643c697,700
+645,646c700,703
 < 		if doSpawning and random.random() < 0.001:
 < 			Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 ---
@@ -191,21 +191,21 @@
 > 			pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 > 			Monster(*pos)
 > 			Particle(*pos)
-653c710
+656c713
 < 			if random.random() < 0.005 and not isinstance(t, Item):
 ---
 > 			if random.random() < 0.005:
-657a715
+660a718
 > 		if player.memory["health"] <= 0: return True
-669c727
+672c730
 < 		w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
 ---
 > 		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
-672a731,733
+675a734,736
 > 		# Health bar
 > 		pygame.draw.rect(screen, RED, pygame.Rect(0, 560, 500, 10))
 > 		pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * (500 / maxhealth), 10))
-730c791
+733c794
 < 		w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
 ---
 > 		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)

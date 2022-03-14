@@ -54,7 +54,7 @@ def SELECTOR(header, items: list):
 		w = FONT.render(i, True, BLACK)
 		if w.get_width() > scrn_width:
 			scrn_width = w.get_width()
-	screen = pygame.display.set_mode([scrn_width, scrn_height])
+	screen = pygame.display.set_mode([scrn_width, scrn_height], pygame.RESIZABLE)
 	running = True
 	big = False
 	while running:
@@ -83,15 +83,18 @@ def SELECTOR(header, items: list):
 					if pos[1] - 40 < len(items) * 40:
 						screen = pygame.display.set_mode([500, 570])
 						return math.floor((pos[1] - 40) / 40)
+				if event.type == pygame.VIDEORESIZE:
+					scrn_width, scrn_height = event.dict["size"]
+					screen = pygame.display.set_mode([scrn_width, scrn_height], pygame.RESIZABLE)
 		c.tick(60)
 		pygame.display.flip()
 
 # WORLD SELECTION -----------------------------------------
 
+autoapocalypse = False
 gennewworld = True
 alwaystick = True
 doSpawning = True
-autoapocalypse = False
 
 def WORLDSELECTION():
 	global gennewworld
@@ -100,7 +103,7 @@ def WORLDSELECTION():
 	global autoapocalypse
 	running = True
 	while running:
-		option = SELECTOR("Platformer", ["New world >", "Load save file >", "", "Auto Apocalypse: " + str(autoapocalypse), "", "Extensions"])
+		option = SELECTOR("Zombie Apocalypse Mode", ["New world >", "Load save file >", "", "Auto Apocalypse: " + str(autoapocalypse), "", "Extensions"])
 		if option == 0:
 			running = False
 		elif option == 1:
@@ -583,7 +586,7 @@ def gainitem(item):
 		items[item] = 0
 	items[item] += 1
 
-maxhealth = 10000
+maxhealth = 100
 entities = []
 player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
 items = {

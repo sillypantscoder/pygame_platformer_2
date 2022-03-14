@@ -54,7 +54,7 @@ def SELECTOR(header, items: list):
 		w = FONT.render(i, True, BLACK)
 		if w.get_width() > scrn_width:
 			scrn_width = w.get_width()
-	screen = pygame.display.set_mode([scrn_width, scrn_height])
+	screen = pygame.display.set_mode([scrn_width, scrn_height], pygame.RESIZABLE)
 	running = True
 	big = False
 	while running:
@@ -83,6 +83,9 @@ def SELECTOR(header, items: list):
 					if pos[1] - 40 < len(items) * 40:
 						screen = pygame.display.set_mode([500, 560])
 						return math.floor((pos[1] - 40) / 40)
+				if event.type == pygame.VIDEORESIZE:
+					scrn_width, scrn_height = event.dict["size"]
+					screen = pygame.display.set_mode([scrn_width, scrn_height], pygame.RESIZABLE)
 		c.tick(60)
 		pygame.display.flip()
 
