@@ -27,7 +27,7 @@ def MAIN():
 	c = True
 	while c:
 		entities = []
-		player = Player(100, 0)
+		player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
 		items = {
 			"gem": 0
 		}

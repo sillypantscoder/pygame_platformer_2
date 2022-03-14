@@ -2,6 +2,10 @@
 < screen = pygame.display.set_mode([500, 560])
 ---
 > screen = pygame.display.set_mode([500, 570])
+30c30
+< 		player = Player(100, 0)
+---
+> 		player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
 32,33c32
 < 			"danger": 0,
 < 			"score": 0
