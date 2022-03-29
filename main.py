@@ -537,8 +537,11 @@ def PLAYING():
 	fpscalc = datetime.datetime.now()
 	fps = "???"
 	minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
+	largeminimap = pygame.Surface((1, 1))
+	largeminimap.fill((0, 0, 0))
 	while True:
 		keys = pygame.key.get_pressed()
+		pos = pygame.mouse.get_pos()
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame.quit()
@@ -635,6 +638,18 @@ def PLAYING():
 								if insideBoard(x + 1, y) and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
 									sets.append({"pos": (x + 1, y), "state": cell})
 			minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
+			largeminimap = totalScreen.copy()
+			largeminimapsize = (BOARDSIZE[0] + BOARDSIZE[1]) * 3
+			pygame.draw.circle(largeminimap, RED, (player.x, player.y), largeminimapsize / 6)
+			for e in entities:
+				if isinstance(e, Spawner):
+					pygame.draw.circle(largeminimap, BLUE, (e.x, e.y), largeminimapsize / 6)
+			largeminimap = pygame.transform.scale(largeminimap, [largeminimapsize, largeminimapsize])
+			largeminimap = pygame.Cursor((round(largeminimapsize / 2), round(largeminimapsize / 2)), largeminimap)
+			if (pos[0] < BOARDSIZE[0]) and (pos[1] < BOARDSIZE[1]):
+				pygame.mouse.set_cursor(largeminimap)
+			else:
+				pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_ARROW)
 		# Fluids and scheduled ticks
 		for s in sets:
 			WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
@@ -682,6 +697,7 @@ def PAUSE():
 	fps = "???"
 	continuerect = pygame.Rect(50, 150, 400, 50)
 	exitrect = pygame.Rect(50, 210, 400, 50)
+	pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_ARROW)
 	while True:
 		pos = pygame.mouse.get_pos()
 		for event in pygame.event.get():
