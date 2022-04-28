@@ -8,6 +8,7 @@ import datetime
 import zipHelpers
 from basics import *
 import worldeditor
+import ui
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -19,6 +20,7 @@ FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
 
 screen = pygame.display.set_mode([500, 560])
+ui.init(screen, FONT)
 
 def MAIN():
 	global entities
@@ -42,50 +44,6 @@ def MAIN():
 				e.append([n.save_as, n.x, n.y])
 		worldeditor.save(WORLD, e, [player.x, player.y], items)
 
-# SELECTOR SCRIPT
-
-def SELECTOR(header, items: list):
-	global screen
-	scrn_height = 560
-	scrn_width = 500
-	if 40 * (len(items) + 1) > 560:
-		scrn_height = 40 * (len(items) + 1)
-	for i in items:
-		w = FONT.render(i, True, BLACK)
-		if w.get_width() > scrn_width:
-			scrn_width = w.get_width()
-	screen = pygame.display.set_mode([scrn_width, scrn_height])
-	running = True
-	big = False
-	while running:
-		pos = pygame.mouse.get_pos()
-		screen.fill(WHITE)
-		# Header
-		pygame.draw.rect(screen, BLACK, pygame.Rect(0, 0, scrn_width, 40))
-		w = FONT.render(header, True, WHITE)
-		screen.blit(w, (0, 0))
-		# Items
-		h = 0
-		for i in items:
-			h += 40
-			w = FONT.render(i, True, BLACK)
-			if math.floor(pos[1] / 40) * 40 == h:
-				w = FONT.render(i, True, WHITE)
-				pygame.draw.rect(screen, BLACK, pygame.Rect(0, h, scrn_width, 40))
-			screen.blit(w, (0, h))
-		# Events
-		for event in pygame.event.get():
-				if event.type == pygame.QUIT:
-					pygame.quit(); exit()
-					# User clicked close button
-				if event.type == pygame.MOUSEBUTTONUP:
-					pos = pygame.mouse.get_pos()
-					if pos[1] - 40 < len(items) * 40:
-						screen = pygame.display.set_mode([500, 560])
-						return math.floor((pos[1] - 40) / 40)
-		c.tick(60)
-		pygame.display.flip()
-
 # WORLD SELECTION -----------------------------------------
 
 gennewworld = True
@@ -101,7 +59,7 @@ def WORLDSELECTION():
 	doSpawning = True
 	running = True
 	while running:
-		option = SELECTOR("Platformer", ["New world >", "Load save file >", "", "Always tick entities: " + str(alwaystick), "Spawning: " + str(doSpawning), "", "Extensions"])
+		option = ui.menu("Platformer", ["New world >", "Load save file >", "", "Always tick entities: " + str(alwaystick), "Spawning: " + str(doSpawning), "", "Extensions"])
 		if option == 0:
 			running = False
 		elif option == 1:
@@ -150,7 +108,7 @@ def GENERATORSELECTION():
 				generators[filename[11:]] = rawStyleItems[filename].decode("UTF-8")
 				itemNames.append(filename[11:])
 	if gennewworld:
-		option = SELECTOR("Select Generator", generators)
+		option = ui.menu("Select Generator", generators)
 		f = open("generator.py", "w")
 		f.write(generators[itemNames[option]])
 		f.close()
@@ -182,7 +140,7 @@ def EXTENSIONS():
 		e = listdir("extensions")
 		for x in e:
 			ex.append(x[:-4])
-		option = SELECTOR("Select Extension", ["Cancel", "", *ex])
+		option = ui.menu("Select Extension", ["Cancel", "", *ex])
 		if option < 2:
 			pass
 		else:
@@ -191,11 +149,11 @@ def EXTENSIONS():
 	while running:
 		currentExtension = zipHelpers.extract_zip("style_env.zip").items["meta.txt"].decode("UTF-8")[:-1]
 		if currentExtension == "(No extension installed)":
-			option = SELECTOR("Extensions", ["Back", "", "No extension installed", "Add extension"])
+			option = ui.menu("Extensions", ["Back", "", "No extension installed", "Add extension"])
 			if option == 0: running = False
 			elif option == 3: addextension()
 		else:
-			option = SELECTOR("Extensions", ["Back", "", "Current extension: " + currentExtension, "Remove extension"])
+			option = ui.menu("Extensions", ["Back", "", "Current extension: " + currentExtension, "Remove extension"])
 			if option == 0: running = False
 			elif option == 3: system("python3 updateenv.py --remove-extension --rm-hard")
 
