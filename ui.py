@@ -21,6 +21,8 @@ class UIElement:
 		r.fill(BLACK)
 		return r
 	def handleclick(self): pass
+	def addclick(self, func): pass
+	def __repr__(self): return "UIElement"
 
 class Header(UIElement):
 	"""A header for a UI. Renders as a white text against a black background."""
@@ -32,6 +34,7 @@ class Header(UIElement):
 		r.fill(BLACK)
 		r.blit(retext, (0, 0))
 		return r
+	def __repr__(self): return f"UIElement (Header \"{self.text}\")"
 
 class Text(UIElement):
 	"""A text element. Renders as a white text against a black background. Cannot be clicked."""
@@ -43,6 +46,7 @@ class Text(UIElement):
 		r.fill(WHITE)
 		r.blit(retext, (0, 0))
 		return r
+	def __repr__(self): return f"UIElement (Text \"{self.text}\")"
 
 class Button(UIElement):
 	"""A button. Renders as a white text against a black background. Can be clicked. When hovered, the text turns white with a black background."""
@@ -61,6 +65,7 @@ class Button(UIElement):
 	def handleclick(self):
 		for handler in self.clickevents:
 			handler()
+	def __repr__(self): return f"UIElement (Button \"{self.text}\")"
 
 class UI:
 	"""A UI to be drawn to the screen. Contains a list of UIElements."""
@@ -91,6 +96,7 @@ class UI:
 			ret.blit(item, (0, cum_y))
 			cum_y += item.get_height()
 		return ret
+	def __repr__(self): return f"UI [ {', '.join([str(i) for i in self.items])} ]"
 
 def render_ui(ui: UI):
 	"""Renders a UI to the screen."""
@@ -107,16 +113,10 @@ def render_ui(ui: UI):
 
 def menu(header: str, items: "list[str]"):
 	"""Displays a menu with the given header and items. Returns the index of the selected item."""
-	def getitemcallback(finish):
-		ui = [Header(header)] # Create the UI element list, with a header
-		getclickerfunc = lambda i: (lambda: finish(i))
-		index = 0
-		for item in items:
-			ui.append(Button(item).addclick(getclickerfunc(index)))
-				# i is used to lock the index into the inner lambda
-			index += 1
-		return ui
-	return listmenu(getitemcallback)
+	ui = UI().add(Header(header))
+	for i in items:
+		ui.add(Button(i))
+	return uimenu(ui) - 1
 
 def listmenu(getitemcallback: "typing.Callable[[function], list[UIElement]]"):
 	"""Displays a UI, with options for each element to return a specific value."""
@@ -132,3 +132,14 @@ def listmenu(getitemcallback: "typing.Callable[[function], list[UIElement]]"):
 	while not finished[0]:
 		render_ui(ui)
 	return finished[1]
+
+def uimenu(ui: UI):
+	def getitemcallback(finish):
+		u: list[UIElement] = [i for i in ui.items] # Create the UI element list
+		getclickerfunc = lambda i: (lambda: finish(i))
+		index = 0
+		for item in u:
+			item.addclick(getclickerfunc(index))
+			index += 1
+		return u
+	return listmenu(getitemcallback)
