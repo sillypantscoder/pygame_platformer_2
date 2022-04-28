@@ -67,6 +67,16 @@ class Button(UIElement):
 			handler()
 	def __repr__(self): return f"UIElement (Button \"{self.text}\")"
 
+class Spacer(UIElement):
+	"""A spacer. Renders as a white bar."""
+	def __init__(self, height):
+		self.height = height
+	def render(self, mouse):
+		r = pygame.Surface((500, self.height))
+		r.fill(WHITE)
+		return r
+	def __repr__(self): return f"UIElement (Spacer)"
+
 class UI:
 	"""A UI to be drawn to the screen. Contains a list of UIElements."""
 	def __init__(self):

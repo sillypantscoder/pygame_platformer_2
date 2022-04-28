@@ -22,10 +22,26 @@ c = pygame.time.Clock()
 screen = pygame.display.set_mode([500, 560])
 ui.init(screen, FONT)
 
+class HomeScreenHeader(ui.Header):
+	def __init__(self, text):
+		self.text = text
+	def render(self, mouse):
+		retext = FONT.render(self.text, True, WHITE)
+		r = pygame.Surface((500, retext.get_height() + 40 + 100))
+		r.fill(BLACK)
+		r.blit(retext, (20, 20 + 100))
+		return r
+
 def MAIN():
 	global entities
 	global player
 	global items
+	# HOME SCREEN
+	homescreen = ui.UI().add(HomeScreenHeader("Platformer"))
+	homescreen.add(ui.Spacer(40))
+	homescreen.add(ui.Button("Play >"))
+	ui.uimenu(homescreen)
+	# PLAYING
 	c = True
 	while c:
 		entities = []
