@@ -1,5 +1,5 @@
-import math
 import pygame
+import typing
 
 settings = {}
 
@@ -13,7 +13,8 @@ def init(screen, font):
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
-class UIelement:
+class UIElement:
+	"""Base class for an element in a UI. Renders as a 1x1 black pixel."""
 	def __init__(self): pass
 	def render(self, mouse):
 		r = pygame.Surface((1, 1))
@@ -21,7 +22,8 @@ class UIelement:
 		return r
 	def handleclick(self): pass
 
-class Header(UIelement):
+class Header(UIElement):
+	"""A header for a UI. Renders as a white text against a black background."""
 	def __init__(self, text):
 		self.text = text
 	def render(self, mouse):
@@ -31,7 +33,8 @@ class Header(UIelement):
 		r.blit(retext, (0, 0))
 		return r
 
-class Text(UIelement):
+class Text(UIElement):
+	"""A text element. Renders as a white text against a black background. Cannot be clicked."""
 	def __init__(self, text):
 		self.text = text
 	def render(self, mouse):
@@ -41,7 +44,8 @@ class Text(UIelement):
 		r.blit(retext, (0, 0))
 		return r
 
-class Button(UIelement):
+class Button(UIElement):
+	"""A button. Renders as a white text against a black background. Can be clicked. When hovered, the text turns white with a black background."""
 	def __init__(self, text):
 		self.text = text
 		self.clickevents = []
@@ -59,9 +63,10 @@ class Button(UIelement):
 			handler()
 
 class UI:
+	"""A UI to be drawn to the screen. Contains a list of UIElements."""
 	def __init__(self):
-		self.items: list[UIelement] = []
-	def add(self, item: UIelement):
+		self.items: list[UIElement] = []
+	def add(self, item: UIElement):
 		self.items.append(item)
 		return self
 	def render(self, mousepos, mouseclicked):
@@ -88,6 +93,7 @@ class UI:
 		return ret
 
 def render_ui(ui: UI):
+	"""Renders a UI to the screen."""
 	clicked = False
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
@@ -100,14 +106,28 @@ def render_ui(ui: UI):
 	pygame.display.flip()
 
 def menu(header: str, items: "list[str]"):
-	ui = UI().add(Header(header))
-	finished = [False, None]
+	"""Displays a menu with the given header and items. Returns the index of the selected item."""
+	def getitemcallback(finish):
+		ui = [Header(header)] # Create the UI element list, with a header
+		getclickerfunc = lambda i: (lambda: finish(i))
+		index = 0
+		for item in items:
+			ui.append(Button(item).addclick(getclickerfunc(index)))
+				# i is used to lock the index into the inner lambda
+			index += 1
+		return ui
+	return listmenu(getitemcallback)
+
+def listmenu(getitemcallback: "typing.Callable[[function], list[UIElement]]"):
+	"""Displays a UI, with options for each element to return a specific value."""
+	ui = UI() # Create the UI
+	finished = [False, None] # 1st item stops the mainloop, 2nd item stores the selected item
 	def finish(v):
 		finished[0] = True
 		finished[1] = v
 	index = 0
-	for item in items:
-		ui.add(Button(item).addclick((lambda i: (lambda: finish(i)))(index)))
+	for item in getitemcallback(finish):
+		ui.add(item)
 		index += 1
 	while not finished[0]:
 		render_ui(ui)
