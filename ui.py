@@ -48,8 +48,8 @@ class Text(UIElement):
 		return r
 	def __repr__(self): return f"UIElement (Text \"{self.text}\")"
 
-class Button(UIElement):
-	"""A button. Renders as a white text against a black background. Can be clicked. When hovered, the text turns white with a black background."""
+class Option(UIElement):
+	"""A clickable text element. Renders as a white text against a black background. When hovered, the text turns white with a black background."""
 	def __init__(self, text):
 		self.text = text
 		self.clickevents = []
@@ -58,6 +58,26 @@ class Button(UIElement):
 		r = pygame.Surface((500, retext.get_height()))
 		r.fill((BLACK if mouse else WHITE))
 		r.blit(retext, (0, 0))
+		return r
+	def addclick(self, handler):
+		self.clickevents.append(handler)
+		return self
+	def handleclick(self):
+		for handler in self.clickevents:
+			handler()
+	def __repr__(self): return f"UIElement (Option \"{self.text}\")"
+
+class Button(UIElement):
+	"""A button. Renders as a white text against a black background. Can be clicked. When hovered, the text turns black with a white background."""
+	def __init__(self, text):
+		self.text = text
+		self.clickevents = []
+	def render(self, mouse):
+		retext = settings["font"].render(self.text, True, (BLACK if mouse else WHITE))
+		r = pygame.Surface((500, retext.get_height() + 20))
+		r.fill(WHITE)
+		pygame.draw.rect(r, BLACK, (50, 10, 400, retext.get_height() + 10), 1 if mouse else 0)
+		r.blit(retext, (((500) // 2) - (retext.get_width() // 2), 15))
 		return r
 	def addclick(self, handler):
 		self.clickevents.append(handler)
@@ -125,7 +145,8 @@ def menu(header: str, items: "list[str]"):
 	"""Displays a menu with the given header and items. Returns the index of the selected item."""
 	ui = UI().add(Header(header))
 	for i in items:
-		ui.add(Button(i))
+		if i == "": ui.add(Text(""))
+		else: ui.add(Option(i))
 	return uimenu(ui) - 1
 
 def listmenu(getitemcallback: "typing.Callable[[function], list[UIElement]]"):
@@ -144,6 +165,7 @@ def listmenu(getitemcallback: "typing.Callable[[function], list[UIElement]]"):
 	return finished[1]
 
 def uimenu(ui: UI):
+	"""Displays an already-created UI, with options for each element to return a specific value."""
 	def getitemcallback(finish):
 		u: list[UIElement] = [i for i in ui.items] # Create the UI element list
 		getclickerfunc = lambda i: (lambda: finish(i))

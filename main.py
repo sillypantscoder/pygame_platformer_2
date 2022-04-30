@@ -39,7 +39,7 @@ def MAIN():
 	# HOME SCREEN
 	homescreen = ui.UI().add(HomeScreenHeader("Platformer"))
 	homescreen.add(ui.Spacer(40))
-	homescreen.add(ui.Button("Play >"))
+	homescreen.add(ui.Option("Play >"))
 	ui.uimenu(homescreen)
 	# PLAYING
 	c = True
@@ -75,7 +75,7 @@ def WORLDSELECTION():
 	doSpawning = True
 	running = True
 	while running:
-		option = ui.menu("Platformer", ["New world >", "Load save file >", "", "Always tick entities: " + str(alwaystick), "Spawning: " + str(doSpawning), "", "Extensions"])
+		option = ui.menu("Platformer", ["New world >", "Load save file >", "", "Always tick entities: " + str(alwaystick), "Spawning: " + str(doSpawning), "", "Extensions >"])
 		if option == 0:
 			running = False
 		elif option == 1:
@@ -156,22 +156,24 @@ def EXTENSIONS():
 		e = listdir("extensions")
 		for x in e:
 			ex.append(x[:-4])
-		option = ui.menu("Select Extension", ["Cancel", "", *ex])
+		optionui = ui.UI().add(ui.Header("Extensions")).add(ui.Button("Cancel")).add(ui.Spacer(10))
+		for x in ex: optionui.add(ui.Option(x))
+		option = ui.uimenu(optionui)
 		if option < 2:
 			pass
 		else:
-			system("python3 updateenv.py --add-extension " + ex[option - 2])
+			system("python3 updateenv.py --add-extension " + ex[option - 3])
 	running = True
 	while running:
 		currentExtension = zipHelpers.extract_zip("style_env.zip").items["meta.txt"].decode("UTF-8")[:-1]
 		if currentExtension == "(No extension installed)":
-			option = ui.menu("Extensions", ["Back", "", "No extension installed", "Add extension"])
-			if option == 0: running = False
-			elif option == 3: addextension()
+			option = ui.uimenu(ui.UI().add(ui.Header("Extensions")).add(ui.Button("Back")).add(ui.Text("")).add(ui.Text("No extension installed")).add(ui.Option("Add extension")))
+			if option == 1: running = False
+			elif option == 4: addextension()
 		else:
-			option = ui.menu("Extensions", ["Back", "", "Current extension: " + currentExtension, "Remove extension"])
-			if option == 0: running = False
-			elif option == 3: system("python3 updateenv.py --remove-extension --rm-hard")
+			option = ui.uimenu(ui.UI().add(ui.Header("Extensions")).add(ui.Button("Back")).add(ui.Text("")).add(ui.Text("Current extension: " + currentExtension)).add(ui.Option("Remove extension")))
+			if option == 1: running = False
+			elif option == 4: system("python3 updateenv.py --remove-extension --rm-hard")
 
 # PLAYING -------------------------------------------------------------------------------------------------------------------------------------------
 
