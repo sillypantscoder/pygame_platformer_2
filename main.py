@@ -9,6 +9,7 @@ import zipHelpers
 from basics import *
 import worldeditor
 import ui
+import threading
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -36,6 +37,7 @@ def MAIN():
 	global entities
 	global player
 	global items
+	global game_playing
 	# HOME SCREEN
 	homescreen = ui.UI().add(HomeScreenHeader("Platformer"))
 	homescreen.add(ui.Spacer(40))
@@ -52,7 +54,9 @@ def MAIN():
 		}
 		WORLDSELECTION()
 		GENERATORSELECTION()
+		game_playing = True
 		c = PLAYING()
+		game_playing = False
 		# SAVING
 		e = []
 		for n in entities:
@@ -96,6 +100,7 @@ WORLD = []
 rawStyleItems = []
 BLOCKS = []
 textures = {}
+LIGHT = [[False for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
 def GENERATORSELECTION():
 	global gennewworld
 	global WORLD
@@ -136,7 +141,6 @@ def GENERATORSELECTION():
 		newEntity = {
 			"monster": Monster,
 			"exploding_monster": ExplodingMonster,
-			"spawner": Spawner,
 			"item_danger": Item,
 			"item_score": ScoreItem,
 			"allay": Allay,
@@ -156,7 +160,7 @@ def EXTENSIONS():
 		e = listdir("extensions")
 		for x in e:
 			ex.append(x[:-4])
-		optionui = ui.UI().add(ui.Header("Extensions")).add(ui.Button("Cancel")).add(ui.Spacer(10))
+		optionui = ui.UI().add(ui.Header("Extensions")).add(ui.Button("Cancel"))
 		for x in ex: optionui.add(ui.Option(x))
 		option = ui.uimenu(optionui)
 		if option < 2:
@@ -376,12 +380,14 @@ class Monster(Entity):
 	def initmemory(self):
 		self.memory = {"direction": None}
 	def opt_ai_calc(self):
-		if self.canjump and random.random() < 0.06: self.vy = -3.1
-		if self.memory["direction"]:
-			self.vx += self.memory["direction"]
-			if random.random() < 0.1: self.memory["direction"] = None
-		else:
-			self.memory["direction"] = random.choice([1, -1])
+		# Find a target.
+		target = player
+		# Go left or right depending on where the target is.
+		if target.x < self.x:
+			self.vx -= 1
+		else: self.vx += 1
+		# If the target is more than half a block above me, jump.
+		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
 	def despawn(self):
 		for i in range(random.choice([0, 1, 2, 3])):
 			self.drop(Item)
@@ -393,13 +399,6 @@ class ExplodingMonster(Monster):
 		self.createExplosion(3)
 		for i in range(random.choice([0, 1, 2, 3])):
 			self.drop(ScoreItem)
-
-class Spawner(Entity):
-	save_as = "spawner"
-	color = (0, 0, 150)
-	def tickmove(self):
-		if random.random() < 0.1: Monster(self.x, self.y)
-		if random.random() < 0.005: ExplodingMonster(self.x, self.y)
 
 class Item(Entity):
 	save_as = "item_danger"
@@ -471,7 +470,7 @@ class Allay(Entity):
 	color = (100, 100, 255)
 	def opt_ai_calc(self):
 		# Find a target.
-		target = None
+		target = player
 		targetdist = 1000
 		for t in entities:
 			dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
@@ -482,10 +481,10 @@ class Allay(Entity):
 		if not target: return
 		# Go left or right depending on where the target is.
 		if target.x < self.x:
-			self.vx -= 1
-		else: self.vx += 1
+			self.vx -= 0.9
+		else: self.vx += 0.9
 		# If the target is more than half a block above me, jump.
-		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
+		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 4
 
 class AllaySpawner(Entity):
 	save_as = "allay_spawner"
@@ -504,6 +503,7 @@ items = {
 	"danger": 0,
 	"score": 0
 }
+game_playing = False
 def PLAYING():
 	global entities
 	global player
@@ -515,6 +515,7 @@ def PLAYING():
 	minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
 	largeminimap = pygame.Surface((1, 1))
 	largeminimap.fill((0, 0, 0))
+	threading.Thread(target=PLAYING_ASYNC_LIGHT).start()
 	while True:
 		keys = pygame.key.get_pressed()
 		pos = pygame.mouse.get_pos()
@@ -525,9 +526,6 @@ def PLAYING():
 				# User clicked close button
 			if event.type == pygame.MOUSEBUTTONUP:
 				pos = pygame.mouse.get_pos()
-				if items["danger"] >= 15:
-					items["danger"] -= 15
-					Spawner(pos[0] + (player.x - 250), pos[1] + (player.y - 250))
 			if event.type == pygame.KEYDOWN:
 				keys = pygame.key.get_pressed()
 				if keys[pygame.K_SPACE]:
@@ -536,16 +534,17 @@ def PLAYING():
 						player.createExplosion(2)
 				if keys[pygame.K_q]:
 					for t in entities:
-						if isinstance(t, (Item, Monster, Spawner, Particle)) and not isinstance(t, ScoreItem):
+						if isinstance(t, (Item, Monster, Particle)) and not isinstance(t, ScoreItem):
 							t.die()
 				if keys[pygame.K_w]:
 					AllaySpawner(player.x, player.y)
 				if keys[pygame.K_ESCAPE]:
 					if PAUSE(): return True;
+					threading.Thread(target=PLAYING_ASYNC_LIGHT).start()
 		if keys[pygame.K_z]:
 			if items["danger"] >= 5:
 				items["danger"] -= 5
-				Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+				Monster(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 		# DRAWING ------------
 		screen.fill(GRAY)
 		totalScreen.fill(WHITE)
@@ -563,6 +562,11 @@ def PLAYING():
 						pygame.draw.rect(totalScreen, (255, 0, 255), cellrect)
 						pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.topleft, CELLSIZE / 2, CELLSIZE / 2))
 						pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.center, CELLSIZE / 2, CELLSIZE / 2))
+					if LIGHT[x][y] == False:
+						l = pygame.Surface(cellrect.size)
+						l.fill((0, 0, 0))
+						l.set_alpha(200)
+						totalScreen.blit(l, cellrect.topleft)
 		# Ticking
 		if tickingrefresh > 0:
 			tickingrefresh -= 1
@@ -582,6 +586,11 @@ def PLAYING():
 					if cell in BLOCKS:
 						if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
 						else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
+						if LIGHT[x][y] == False:
+							l = pygame.Surface(cellrect.size)
+							l.fill((0, 0, 0))
+							l.set_alpha(200)
+							totalScreen.blit(l, cellrect.topleft)
 						# FLUIDS
 						if BLOCKS[cell]["fluid"] == "source":
 							# Fall down
@@ -618,8 +627,8 @@ def PLAYING():
 			largeminimapsize = (BOARDSIZE[0] + BOARDSIZE[1]) * 3
 			pygame.draw.circle(largeminimap, RED, (player.x, player.y), largeminimapsize / 6)
 			for e in entities:
-				if isinstance(e, Spawner):
-					pygame.draw.circle(largeminimap, BLUE, (e.x, e.y), largeminimapsize / 6)
+				if isinstance(e, Monster):
+					pygame.draw.circle(largeminimap, GREEN, (e.x, e.y), largeminimapsize / 6)
 			largeminimap = pygame.transform.scale(largeminimap, [largeminimapsize, largeminimapsize])
 			largeminimap = pygame.Cursor((round(largeminimapsize / 2), round(largeminimapsize / 2)), largeminimap)
 			if (pos[0] < BOARDSIZE[0]) and (pos[1] < BOARDSIZE[1]):
@@ -629,9 +638,6 @@ def PLAYING():
 		# Fluids and scheduled ticks
 		for s in sets:
 			WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
-		# Spawning
-		if doSpawning and random.random() < 0.001:
-			Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 		# Players & Screen
 		player.tick()
 		for t in entities:
@@ -665,12 +671,34 @@ def PLAYING():
 		pygame.display.flip()
 		c.tick(60)
 
+def PLAYING_ASYNC_LIGHT():
+	c = pygame.time.Clock()
+	while game_playing:
+		# 1. Iterate over every block
+		for x in range(BOARDSIZE[0]):
+			for y in range(BOARDSIZE[1]):
+				cell = WORLD[x][y]
+				# 2. Check whether the block is exposed to the roof
+				hasLight = True
+				for cy in range(0, y):
+					if BLOCKS[WORLD[x][cy]]["collision"] != "empty":
+						hasLight = False
+				LIGHT[x][y] = hasLight
+				# 3. If the block is dark and is non-solid, there is a chance to spawn a monster
+				if (not hasLight) and BLOCKS[WORLD[x][y]]["collision"] == "empty" and random.random() < 0.00001:
+					for x in range(50): Monster(x * CELLSIZE, y * CELLSIZE)
+				if BLOCKS[WORLD[x][y]]["collision"] == "empty" and random.random() < 0.0001:
+					Allay(x * CELLSIZE, y * CELLSIZE)
+		c.tick(60)
+
 # Pause menu
 
 def PAUSE():
+	global game_playing
 	global entities
 	global items
 	fps = "???"
+	game_playing = False
 	continuerect = pygame.Rect(50, 150, 400, 50)
 	exitrect = pygame.Rect(50, 210, 400, 50)
 	pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_ARROW)
@@ -684,12 +712,15 @@ def PAUSE():
 			if event.type == pygame.MOUSEBUTTONUP:
 				pos = pygame.mouse.get_pos()
 				if continuerect.collidepoint(pos):
+					game_playing = True
 					return False;
 				if exitrect.collidepoint(pos):
+					game_playing = True
 					return True;
 			if event.type == pygame.KEYDOWN:
 				keys = pygame.key.get_pressed()
 				if keys[pygame.K_ESCAPE]:
+					game_playing = True
 					return False;
 		# DRAWING ------------
 		screen.fill(GRAY)
