@@ -343,14 +343,14 @@ class Entity:
 		pass
 	def despawn(self):
 		pass
-	def die(self):
+	def die(self, despawn_first=True):
 		if self in entities:
-			self.despawn()
-			entities.remove(self)
+			if despawn_first: self.despawn()
+			if self in entities: entities.remove(self)
 		else: errormsg(self, "was removed twice")
 	def getBlock(self):
 		if not insideBoard(round(self.x / CELLSIZE), round(self.y / CELLSIZE)):
-			self.die() # Out of bounds
+			self.die(False) # Out of bounds
 			return (0, 0)
 		return (round(self.x / CELLSIZE), round(self.y / CELLSIZE))
 	def createExplosion(self, rad):
@@ -710,6 +710,8 @@ def PLAYING_ASYNC_LIGHT():
 				LIGHT[x][y] = hasLight
 				# 3. If the block is dark and is non-solid, there is a chance to spawn a monster
 				if (not hasLight) and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.00001:
+					Monster(x * CELLSIZE, y * CELLSIZE)
+				if BLOCKS[cell]["collision"] == "spawner" and random.random() < 0.01:
 					Monster(x * CELLSIZE, y * CELLSIZE)
 				# 4. There is always a chance to spawn an Allay
 				#    because we are already spawning things so why not
