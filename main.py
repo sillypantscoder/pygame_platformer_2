@@ -349,6 +349,9 @@ class Entity:
 			entities.remove(self)
 		else: errormsg(self, "was removed twice")
 	def getBlock(self):
+		if not insideBoard(round(self.x / CELLSIZE), round(self.y / CELLSIZE)):
+			self.die() # Out of bounds
+			return (0, 0)
 		return (round(self.x / CELLSIZE), round(self.y / CELLSIZE))
 	def createExplosion(self, rad):
 		explosion(self.x / CELLSIZE, self.y / CELLSIZE, rad)
@@ -378,6 +381,15 @@ class Player(Entity):
 class Monster(Entity):
 	save_as = "monster"
 	color = (0, 150, 0)
+	def draw(self, playerx, playery):
+		thisrect = pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 280 - playery))
+		pygame.draw.rect(screen, self.color, thisrect)
+		s = pygame.Surface(thisrect.size)
+		s.set_alpha(255 - self.memory["health"])
+		s.fill((255, 0, 0))
+		screen.blit(s, thisrect.topleft)
+	def initmemory(self):
+		self.memory = {"health": 255}
 	def opt_ai_calc(self):
 		# Find a target.
 		target = player
@@ -387,6 +399,12 @@ class Monster(Entity):
 		else: self.vx += 1
 		# If the target is more than half a block above me, jump.
 		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
+		# Sunlight burns!!!
+		if LIGHT[self.getBlock()[0]][self.getBlock()[1]] == 1:
+			self.memory["health"] -= 1
+		# If I'm out of health, die.
+		if self.memory["health"] <= 0:
+			self.die()
 	def despawn(self):
 		for i in range(random.choice([0, 1, 2, 3])):
 			self.drop(Item)
@@ -484,6 +502,9 @@ class Allay(Entity):
 		else: self.vx += 0.9
 		# If the target is more than half a block above me, jump.
 		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 4
+		# If the target is a monster, decrease its health.
+		if isinstance(target, Monster):
+			if targetdist < 10: target.memory["health"] -= 1
 
 class AllaySpawner(Entity):
 	save_as = "allay_spawner"
@@ -646,8 +667,8 @@ def PLAYING():
 		for t in entities:
 			t.draw(player.x, player.y)
 			if isinstance(t, Monster):
-				if random.random() < 0.005 and math.dist((player.x, player.y), (t.x, t.y)) < 80:
-					t.die()
+				# Monsters cannot die!
+				pass
 			elif not isinstance(t, Item):
 				if random.random() < 0.005:
 					t.die()
