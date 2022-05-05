@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 pygame.font.init()
 
-WORLD = None
+WORLD: "list[list[str]]" = None
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
 
@@ -97,9 +97,9 @@ def WORLDSELECTION():
 # GENERATOR SELECTION
 
 WORLD = []
-rawStyleItems = []
-BLOCKS = []
-textures = {}
+rawStyleItems = {}
+BLOCKS: "list[dict]" = []
+textures: "dict[str, pygame.Surface]" = {}
 LIGHT = [[False for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
 def GENERATORSELECTION():
 	global gennewworld
@@ -181,7 +181,7 @@ def EXTENSIONS():
 
 # PLAYING -------------------------------------------------------------------------------------------------------------------------------------------
 
-def bytesToSurface(b: bytes):
+def bytesToSurface(b: bytes) -> pygame.Surface:
 	f = open("texture.png", "wb")
 	f.write(b)
 	f.close()
@@ -202,7 +202,8 @@ def insideBoard(x, y):
 	if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: return False
 	return True
 
-def explosion(float_cx, float_cy, rad):
+def explosion(float_cx: float, float_cy: float, rad: int):
+	"""Creates an explosion at the given coordinates with the given radius."""
 	cx = round(float_cx)
 	cy = round(float_cy)
 	if not insideBoard(cx, cy): return
@@ -377,8 +378,6 @@ class Player(Entity):
 class Monster(Entity):
 	save_as = "monster"
 	color = (0, 150, 0)
-	def initmemory(self):
-		self.memory = {"direction": None}
 	def opt_ai_calc(self):
 		# Find a target.
 		target = player
@@ -425,7 +424,7 @@ class ScoreItem(Item):
 		self.memory = {"img": "score", "img_surface": None, "stacksize": 1}
 
 class Particle(Entity):
-	# Particles tdo not need to be saved.
+	# Particles do not need to be saved.
 	def initmemory(self):
 		self.memory = {"img": "danger", "img_surface": None, "ticks": 100, "size": 0}
 	def draw(self, playerx, playery):
@@ -475,7 +474,7 @@ class Allay(Entity):
 		for t in entities:
 			dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
 			# Find the closest Item.
-			if dist < targetdist and isinstance(t, Item):
+			if dist < targetdist and isinstance(t, (Item, Monster)):
 				target = t
 				targetdist = dist
 		if not target: return
@@ -497,7 +496,7 @@ def gainitem(item):
 		items[item] = 0
 	items[item] += 1
 
-entities = []
+entities: "list[Entity]" = []
 player = Player(100, 0)
 items = {
 	"danger": 0,
@@ -508,10 +507,10 @@ def PLAYING():
 	global entities
 	global player
 	global items
-	tickingrefresh = 10
-	tickingcount = 0
+	tickingrefresh: int = 10
+	tickingcount: int = 0
 	fpscalc = datetime.datetime.now()
-	fps = "???"
+	fps: int = "???"
 	minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
 	largeminimap = pygame.Surface((1, 1))
 	largeminimap.fill((0, 0, 0))
@@ -646,11 +645,14 @@ def PLAYING():
 		player.draw(player.x, player.y)
 		for t in entities:
 			t.draw(player.x, player.y)
-			# Despawning
-			if random.random() < 0.005 and not isinstance(t, Item):
-				t.die()
+			if isinstance(t, Monster):
+				if random.random() < 0.005 and math.dist((player.x, player.y), (t.x, t.y)) < 80:
+					t.die()
+			elif not isinstance(t, Item):
+				if random.random() < 0.005:
+					t.die()
 			# Dying
-			elif t.y + 10 > BOARDSIZE[1] * CELLSIZE:
+			if t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 				t.die()
 		# FLIP -----------------
 		# Framerate
@@ -672,6 +674,7 @@ def PLAYING():
 		c.tick(60)
 
 def PLAYING_ASYNC_LIGHT():
+	global LIGHT
 	c = pygame.time.Clock()
 	while game_playing:
 		# 1. Iterate over every block
@@ -685,9 +688,11 @@ def PLAYING_ASYNC_LIGHT():
 						hasLight = False
 				LIGHT[x][y] = hasLight
 				# 3. If the block is dark and is non-solid, there is a chance to spawn a monster
-				if (not hasLight) and BLOCKS[WORLD[x][y]]["collision"] == "empty" and random.random() < 0.00001:
-					for x in range(50): Monster(x * CELLSIZE, y * CELLSIZE)
-				if BLOCKS[WORLD[x][y]]["collision"] == "empty" and random.random() < 0.0001:
+				if (not hasLight) and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.00001:
+					Monster(x * CELLSIZE, y * CELLSIZE)
+				# 4. There is always a chance to spawn an Allay
+				#    because we are already spawning things so why not
+				if BLOCKS[cell]["collision"] == "empty" and random.random() < 0.0001:
 					Allay(x * CELLSIZE, y * CELLSIZE)
 		c.tick(60)
 
@@ -697,7 +702,6 @@ def PAUSE():
 	global game_playing
 	global entities
 	global items
-	fps = "???"
 	game_playing = False
 	continuerect = pygame.Rect(50, 150, 400, 50)
 	exitrect = pygame.Rect(50, 210, 400, 50)
