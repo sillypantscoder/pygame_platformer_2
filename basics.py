@@ -3,6 +3,7 @@
 # Board geometry
 BOARDSIZE = [30, 30]
 CELLSIZE = 50
+PLAYERHEALTH = 100
 
 # Colors
 WHITE = (255, 255, 255)

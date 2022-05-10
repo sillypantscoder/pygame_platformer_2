@@ -8,22 +8,53 @@ import datetime
 import zipHelpers
 from basics import *
 import worldeditor
+import ui
+import threading
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 pygame.font.init()
 
-WORLD = None
+WORLD: "list[list[str]]" = None
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
 
 screen = pygame.display.set_mode([500, 570])
+ui.init(screen, FONT)
+
+class HomeScreenHeader(ui.Header):
+	def __init__(self): pass
+	def render(self, mouse):
+		# ZOMBIE
+		cum_y = 20
+		retext = FONT.render("Mode", True, WHITE)
+		h = 40 + 100 + (retext.get_height())
+		r = pygame.Surface((500, h))
+		r.fill(BLACK)
+		cum_y += retext.get_height()
+		r.blit(retext, (20, h - cum_y))
+		# APOCALYPSE
+		retext = FONT.render("Apocalypse", True, WHITE)
+		cum_y += retext.get_height()
+		r.blit(retext, (20, h - cum_y))
+		# MODE
+		retext = FONT.render("Zombie", True, WHITE)
+		cum_y += retext.get_height()
+		r.blit(retext, (20, h - cum_y))
+		return r
 
 def MAIN():
 	global entities
 	global player
 	global items
+	global game_playing
+	# HOME SCREEN
+	homescreen = ui.UI().add(HomeScreenHeader())
+	homescreen.add(ui.Spacer(40))
+	homescreen.add(ui.Option("Play >"))
+	ui.uimenu(homescreen)
+	# PLAYING
 	c = True
 	while c:
 		entities = []
@@ -33,58 +64,16 @@ def MAIN():
 		}
 		WORLDSELECTION()
 		GENERATORSELECTION()
+		game_playing = True
 		c = PLAYING()
+		game_playing = False
 		# SAVING
 		e = []
 		for n in entities:
 			if n.save_as != None:
 				e.append([n.save_as, n.x, n.y])
-		worldeditor.save(WORLD, e, [player.x, player.y], items)
+		worldeditor.save(WORLD, e, [player.x, player.y], items, player.memory["health"])
 		ENDGAME()
-
-# SELECTOR SCRIPT
-
-def SELECTOR(header, items: list):
-	global screen
-	scrn_height = 570
-	scrn_width = 500
-	if 40 * (len(items) + 1) > 570:
-		scrn_height = 40 * (len(items) + 1)
-	for i in items:
-		w = FONT.render(i, True, BLACK)
-		if w.get_width() > scrn_width:
-			scrn_width = w.get_width()
-	screen = pygame.display.set_mode([scrn_width, scrn_height])
-	running = True
-	big = False
-	while running:
-		pos = pygame.mouse.get_pos()
-		screen.fill(WHITE)
-		# Header
-		pygame.draw.rect(screen, BLACK, pygame.Rect(0, 0, scrn_width, 40))
-		w = FONT.render(header, True, WHITE)
-		screen.blit(w, (0, 0))
-		# Items
-		h = 0
-		for i in items:
-			h += 40
-			w = FONT.render(i, True, BLACK)
-			if math.floor(pos[1] / 40) * 40 == h:
-				w = FONT.render(i, True, WHITE)
-				pygame.draw.rect(screen, BLACK, pygame.Rect(0, h, scrn_width, 40))
-			screen.blit(w, (0, h))
-		# Events
-		for event in pygame.event.get():
-				if event.type == pygame.QUIT:
-					pygame.quit(); exit()
-					# User clicked close button
-				if event.type == pygame.MOUSEBUTTONUP:
-					pos = pygame.mouse.get_pos()
-					if pos[1] - 40 < len(items) * 40:
-						screen = pygame.display.set_mode([500, 570])
-						return math.floor((pos[1] - 40) / 40)
-		c.tick(60)
-		pygame.display.flip()
 
 # WORLD SELECTION -----------------------------------------
 
@@ -98,9 +87,13 @@ def WORLDSELECTION():
 	global alwaystick
 	global doSpawning
 	global autoapocalypse
+	gennewworld = True
+	alwaystick = True
+	doSpawning = True
+	autoapocalypse = False
 	running = True
 	while running:
-		option = SELECTOR("Zombie Apocalypse Mode", ["New world >", "Load save file >", "", "Auto Apocalypse: " + str(autoapocalypse), "", "Extensions"])
+		option = ui.menu("Zombie Apocalypse Mode", ["New world >", "Load save file >", "", "Auto Apocalypse: " + str(autoapocalypse), "", "Extensions"])
 		if option == 0:
 			running = False
 		elif option == 1:
@@ -116,9 +109,10 @@ def WORLDSELECTION():
 # GENERATOR SELECTION
 
 WORLD = []
-rawStyleItems = []
-BLOCKS = []
-textures = {}
+rawStyleItems = {}
+BLOCKS: "list[dict]" = []
+textures: "dict[str, pygame.Surface]" = {}
+LIGHT = [[False for x in range(BOARDSIZE[0])] for y in range(BOARDSIZE[1])]
 def GENERATORSELECTION():
 	global gennewworld
 	global WORLD
@@ -147,19 +141,18 @@ def GENERATORSELECTION():
 				generators[filename[11:]] = rawStyleItems[filename].decode("UTF-8")
 				itemNames.append(filename[11:])
 	if gennewworld:
-		option = SELECTOR("Select Generator", generators)
+		option = ui.menu("Select Generator", generators)
 		f = open("generator.py", "w")
 		f.write(generators[itemNames[option]])
 		f.close()
 		system("python3 generator.py")
 		system("rm generator.py")
 	# WORLD LOADING
-	WORLD, e, playerpos, i = worldeditor.load()
+	WORLD, e, playerpos, i, player.memory["health"] = worldeditor.load()
 	for t in e:
 		newEntity = {
 			"monster": Monster,
 			"exploding_monster": ExplodingMonster,
-			"spawner": Spawner,
 			"item_danger": Item,
 			"item_score": ScoreItem,
 			"allay": Allay,
@@ -179,26 +172,28 @@ def EXTENSIONS():
 		e = listdir("extensions")
 		for x in e:
 			ex.append(x[:-4])
-		option = SELECTOR("Select Extension", ["Cancel", "", *ex])
+		optionui = ui.UI().add(ui.Header("Extensions")).add(ui.Button("Cancel"))
+		for x in ex: optionui.add(ui.Option(x))
+		option = ui.uimenu(optionui)
 		if option < 2:
 			pass
 		else:
-			system("python3 updateenv.py --add-extension " + ex[option - 2])
+			system("python3 updateenv.py --add-extension " + ex[option - 3])
 	running = True
 	while running:
 		currentExtension = zipHelpers.extract_zip("style_env.zip").items["meta.txt"].decode("UTF-8")[:-1]
 		if currentExtension == "(No extension installed)":
-			option = SELECTOR("Extensions", ["Back", "", "No extension installed", "Add extension"])
-			if option == 0: running = False
-			elif option == 3: addextension()
+			option = ui.uimenu(ui.UI().add(ui.Header("Extensions")).add(ui.Button("Back")).add(ui.Text("")).add(ui.Text("No extension installed")).add(ui.Option("Add extension")))
+			if option == 1: running = False
+			elif option == 4: addextension()
 		else:
-			option = SELECTOR("Extensions", ["Back", "", "Current extension: " + currentExtension, "Remove extension"])
-			if option == 0: running = False
-			elif option == 3: system("python3 updateenv.py --remove-extension --rm-hard")
+			option = ui.uimenu(ui.UI().add(ui.Header("Extensions")).add(ui.Button("Back")).add(ui.Text("")).add(ui.Text("Current extension: " + currentExtension)).add(ui.Option("Remove extension")))
+			if option == 1: running = False
+			elif option == 4: system("python3 updateenv.py --remove-extension --rm-hard")
 
 # PLAYING -------------------------------------------------------------------------------------------------------------------------------------------
 
-def bytesToSurface(b: bytes):
+def bytesToSurface(b: bytes) -> pygame.Surface:
 	f = open("texture.png", "wb")
 	f.write(b)
 	f.close()
@@ -219,7 +214,8 @@ def insideBoard(x, y):
 	if x < 0 or y < 0 or x >= BOARDSIZE[0] or y >= BOARDSIZE[1]: return False
 	return True
 
-def explosion(float_cx, float_cy, rad):
+def explosion(float_cx: float, float_cy: float, rad: int):
+	"""Creates an explosion at the given coordinates with the given radius."""
 	cx = round(float_cx)
 	cy = round(float_cy)
 	if not insideBoard(cx, cy): return
@@ -347,9 +343,13 @@ class Entity:
 						self.y = platform.bottom
 						pygame.draw.line(totalScreen, (0, 255, 0), platform.bottomleft, platform.bottomright, 5)
 		# Respawning, Crashing, and Moving
-		if self.y > BOARDSIZE[1] * CELLSIZE:
-			self.x = (BOARDSIZE[0] / 2) * CELLSIZE
-			self.y = (BOARDSIZE[1] / 2) * CELLSIZE
+		floor = BOARDSIZE[1] * CELLSIZE
+		floor -= 10
+		if self.y > floor:
+			self.y = floor
+			self.vy = -5
+		if self.x < 0: self.vx += 0.5
+		if self.x > BOARDSIZE[0] * CELLSIZE: self.vx -= 0.5
 		if self.vx > 20 or self.vy > 20 or self.vx < -20 or self.vy < -20:
 			self.vx = 0
 			self.vy = 0
@@ -360,12 +360,19 @@ class Entity:
 		pass
 	def despawn(self):
 		pass
-	def die(self):
+	def die(self, despawn_first=True):
 		if self in entities:
-			self.despawn()
-			entities.remove(self)
+			if despawn_first: self.despawn()
+			if self in entities: entities.remove(self)
 		else: errormsg(self, "was removed twice")
 	def getBlock(self):
+		if not insideBoard(round(self.x / CELLSIZE), round(self.y / CELLSIZE)):
+			# Out of bounds - clamp to edge
+			if self.x < 0: self.x = 0
+			if self.y < 0: self.y = 0
+			if self.x > BOARDSIZE[0] * CELLSIZE: self.x = BOARDSIZE[0] * CELLSIZE
+			if self.y > BOARDSIZE[1] * CELLSIZE: self.y = BOARDSIZE[1] * CELLSIZE
+			return (0, 0)
 		return (round(self.x / CELLSIZE), round(self.y / CELLSIZE))
 	def createExplosion(self, rad):
 		explosion(self.x / CELLSIZE, self.y / CELLSIZE, rad)
@@ -460,13 +467,6 @@ class ExplodingMonster(Monster):
 		for i in range(random.choice([0, 1, 2, 3])):
 			self.drop(ScoreItem)
 
-class Spawner(Entity):
-	save_as = "spawner"
-	color = (0, 0, 150)
-	def tickmove(self):
-		if random.random() < 0.1: Monster(self.x, self.y)
-		if random.random() < 0.005: ExplodingMonster(self.x, self.y)
-
 class Item(Entity):
 	save_as = "item_danger"
 	def initmemory(self):
@@ -489,10 +489,10 @@ class Item(Entity):
 class ScoreItem(Item):
 	save_as = "item_score"
 	def initmemory(self):
-		self.memory = {"img": "score", "img_surface": None, "stacksize": 1}
+		self.memory = {"img": "score", "img_surface": None}
 
 class Particle(Entity):
-	# Particles tdo not need to be saved.
+	# Particles do not need to be saved.
 	def initmemory(self):
 		self.memory = {"img": "danger", "img_surface": None, "ticks": 100, "size": 0}
 	def draw(self, playerx, playery):
@@ -537,7 +537,7 @@ class Allay(Entity):
 	color = (100, 100, 255)
 	def opt_ai_calc(self):
 		# Find a target.
-		target = None
+		target = player
 		targetdist = 1000
 		for t in entities:
 			dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
@@ -584,22 +584,25 @@ def gainitem(item):
 	items[item] += 1
 
 maxhealth = 100
-entities = []
+entities: "list[Entity]" = []
 player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
 items = {
 	"gem": 0
 }
+game_playing = False
 def PLAYING():
 	global entities
 	global player
 	global items
-	tickingrefresh = 10
-	tickingcount = 0
+	tickingrefresh: int = 10
+	tickingcount: int = 0
 	fpscalc = datetime.datetime.now()
-	fps = "???"
+	fps: int = "???"
 	minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
+	threading.Thread(target=PLAYING_ASYNC_LIGHT).start()
 	while True:
 		keys = pygame.key.get_pressed()
+		pos = pygame.mouse.get_pos()
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				return False;
@@ -616,12 +619,9 @@ def PLAYING():
 							t.die()
 				if keys[pygame.K_ESCAPE]:
 					if PAUSE(): return True;
+					threading.Thread(target=PLAYING_ASYNC_LIGHT).start()
 		if keys[pygame.K_w]:
 			Allay(player.x, player.y)
-		if keys[pygame.K_z]:
-			if items["danger"] >= 5:
-				items["danger"] -= 5
-				Spawner(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
 		# DRAWING ------------
 		screen.fill(GRAY)
 		totalScreen.fill(WHITE)
@@ -639,6 +639,11 @@ def PLAYING():
 						pygame.draw.rect(totalScreen, (255, 0, 255), cellrect)
 						pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.topleft, CELLSIZE / 2, CELLSIZE / 2))
 						pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.center, CELLSIZE / 2, CELLSIZE / 2))
+					if LIGHT[x][y] == False:
+						l = pygame.Surface(cellrect.size)
+						l.fill((0, 0, 0))
+						l.set_alpha(200)
+						totalScreen.blit(l, cellrect.topleft)
 		# Ticking
 		if tickingrefresh > 0:
 			tickingrefresh -= 1
@@ -658,6 +663,11 @@ def PLAYING():
 					if cell in BLOCKS:
 						if BLOCKS[cell]["color"] == False: totalScreen.blit(textures["block/" + cell + ".png"], cellrect.topleft)
 						else: pygame.draw.rect(totalScreen, BLOCKS[cell]["color"], cellrect)
+						if LIGHT[x][y] == False:
+							l = pygame.Surface(cellrect.size)
+							l.fill((0, 0, 0))
+							l.set_alpha(200)
+							totalScreen.blit(l, cellrect.topleft)
 						# FLUIDS
 						if BLOCKS[cell]["fluid"] == "source":
 							# Fall down
@@ -693,11 +703,6 @@ def PLAYING():
 		# Fluids and scheduled ticks
 		for s in sets:
 			WORLD[s["pos"][0]][s["pos"][1]] = s["state"]
-		# Spawning
-		if doSpawning and random.random() < (0.01 * items["gem"]) + 0.05:
-			pos = (random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
-			Monster(*pos)
-			Particle(*pos)
 		# Players & Screen
 		player.tick()
 		for t in entities:
@@ -735,12 +740,38 @@ def PLAYING():
 		pygame.display.flip()
 		c.tick(60)
 
+def PLAYING_ASYNC_LIGHT():
+	global LIGHT
+	c = pygame.time.Clock()
+	while game_playing:
+		# 1. Iterate over every block
+		for x in range(BOARDSIZE[0]):
+			for y in range(BOARDSIZE[1]):
+				cell = WORLD[x][y]
+				# 2. Check whether the block is exposed to the roof
+				hasLight = True
+				for cy in range(0, y):
+					if BLOCKS[WORLD[x][cy]]["collision"] != "empty":
+						hasLight = False
+				LIGHT[x][y] = hasLight
+				# 3. If the block is dark and is non-solid, there is a chance to spawn a monster
+				if (not hasLight) and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.00001:
+					Monster(x * CELLSIZE, y * CELLSIZE)
+				if BLOCKS[cell]["collision"] == "spawner" and random.random() < 0.01:
+					Monster(x * CELLSIZE, y * CELLSIZE)
+				# 4. There is always a chance to spawn an Allay
+				#    because we are already spawning things so why not
+				if BLOCKS[cell]["collision"] == "empty" and random.random() < 0.0001:
+					Allay(x * CELLSIZE, y * CELLSIZE)
+		c.tick(60)
+
 # Pause menu
 
 def PAUSE():
+	global game_playing
 	global entities
 	global items
-	fps = "???"
+	game_playing = False
 	continuerect = pygame.Rect(50, 150, 400, 50)
 	exitrect = pygame.Rect(50, 210, 400, 50)
 	while True:
@@ -753,12 +784,15 @@ def PAUSE():
 			if event.type == pygame.MOUSEBUTTONUP:
 				pos = pygame.mouse.get_pos()
 				if continuerect.collidepoint(pos):
+					game_playing = True
 					return False;
 				if exitrect.collidepoint(pos):
+					game_playing = True
 					return True;
 			if event.type == pygame.KEYDOWN:
 				keys = pygame.key.get_pressed()
 				if keys[pygame.K_ESCAPE]:
+					game_playing = True
 					return False;
 		# DRAWING ------------
 		screen.fill(GRAY)

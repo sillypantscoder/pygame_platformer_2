@@ -61,7 +61,7 @@ def MAIN():
 		for n in entities:
 			if n.save_as != None:
 				e.append([n.save_as, n.x, n.y])
-		worldeditor.save(WORLD, e, [player.x, player.y], items)
+		worldeditor.save(WORLD, e, [player.x, player.y], items, player.memory["health"])
 
 # WORLD SELECTION -----------------------------------------
 
@@ -135,7 +135,7 @@ def GENERATORSELECTION():
 		system("python3 generator.py")
 		system("rm generator.py")
 	# WORLD LOADING
-	WORLD, e, playerpos, i = worldeditor.load()
+	WORLD, e, playerpos, i, player.memory["health"] = worldeditor.load()
 	for t in e:
 		newEntity = {
 			"monster": Monster,
@@ -374,7 +374,7 @@ class Player(Entity):
 	color = (255, 0, 0)
 	def initmemory(self):
 		entities.remove(self)
-		self.memory = {"health": maxhealth}
+		self.memory = {"health": PLAYERHEALTH}
 	def tickmove(self):
 		keys = pygame.key.get_pressed()
 		if keys[pygame.K_LEFT]:
@@ -531,7 +531,6 @@ def gainitem(item):
 		items[item] = 0
 	items[item] += 1
 
-maxhealth = 100
 entities: "list[Entity]" = []
 player = Player(100, 0)
 items = {
@@ -706,7 +705,7 @@ def PLAYING():
 		screen.blit(w, (0, BOARDSIZE[1]))
 		# Health bar
 		pygame.draw.rect(screen, RED, pygame.Rect(0, 560, 500, 10))
-		pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * (500 / maxhealth), 10))
+		pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * (500 / PLAYERHEALTH), 10))
 		# Flip
 		pygame.display.flip()
 		c.tick(60)
