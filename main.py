@@ -20,14 +20,13 @@ WORLD: "list[list[str]]" = None
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
 
-screen = pygame.display.set_mode([500, 560])
+screen = pygame.display.set_mode([500, 570])
 ui.init(screen, FONT)
 
 class HomeScreenHeader(ui.Header):
-	def __init__(self, text):
-		self.text = text
+	def __init__(self): pass
 	def render(self, mouse):
-		retext = FONT.render(self.text, True, WHITE)
+		retext = FONT.render("Platformer", True, WHITE)
 		r = pygame.Surface((500, retext.get_height() + 40 + 100))
 		r.fill(BLACK)
 		r.blit(retext, (20, 20 + 100))
@@ -39,7 +38,7 @@ def MAIN():
 	global items
 	global game_playing
 	# HOME SCREEN
-	homescreen = ui.UI().add(HomeScreenHeader("Platformer"))
+	homescreen = ui.UI().add(HomeScreenHeader())
 	homescreen.add(ui.Spacer(40))
 	homescreen.add(ui.Option("Play >"))
 	ui.uimenu(homescreen)
@@ -375,6 +374,7 @@ class Player(Entity):
 	color = (255, 0, 0)
 	def initmemory(self):
 		entities.remove(self)
+		self.memory = {"health": maxhealth}
 	def tickmove(self):
 		keys = pygame.key.get_pressed()
 		if keys[pygame.K_LEFT]:
@@ -383,6 +383,7 @@ class Player(Entity):
 			self.vx += 1
 		if keys[pygame.K_UP] and self.canjump:
 			self.vy = -3.1
+		self.memory["health"] += 0.01
 	def die(self):
 		self.x = 100
 		self.y = 0
@@ -399,6 +400,10 @@ class Monster(Entity):
 		screen.blit(s, thisrect.topleft)
 	def initmemory(self):
 		self.memory = {"health": 255}
+	def tickmove(self):
+		# If we are near the player, decrease the player's health.
+		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(player.x, player.y, 10, 10)):
+			player.memory["health"] -= 1
 	def opt_ai_calc(self):
 		# Find a target.
 		target = player
@@ -448,7 +453,7 @@ class Item(Entity):
 class ScoreItem(Item):
 	save_as = "item_score"
 	def initmemory(self):
-		self.memory = {"img": "score", "img_surface": None, "stacksize": 1}
+		self.memory = {"img": "score", "img_surface": None}
 
 class Particle(Entity):
 	# Particles do not need to be saved.
@@ -526,6 +531,7 @@ def gainitem(item):
 		items[item] = 0
 	items[item] += 1
 
+maxhealth = 100
 entities: "list[Entity]" = []
 player = Player(100, 0)
 items = {
@@ -553,8 +559,6 @@ def PLAYING():
 				pygame.quit()
 				return False;
 				# User clicked close button
-			if event.type == pygame.MOUSEBUTTONUP:
-				pos = pygame.mouse.get_pos()
 			if event.type == pygame.KEYDOWN:
 				keys = pygame.key.get_pressed()
 				if keys[pygame.K_SPACE]:
@@ -684,6 +688,7 @@ def PLAYING():
 			# Dying
 			if t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 				t.die()
+		if player.memory["health"] <= 0: return True
 		# FLIP -----------------
 		# Framerate
 		if tickingrefresh == 1:
@@ -699,6 +704,9 @@ def PLAYING():
 		screen.blit(w, (BOARDSIZE[0], 0))
 		w = FONT.render(f"{str(len(entities))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
 		screen.blit(w, (0, BOARDSIZE[1]))
+		# Health bar
+		pygame.draw.rect(screen, RED, pygame.Rect(0, 560, 500, 10))
+		pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * (500 / maxhealth), 10))
 		# Flip
 		pygame.display.flip()
 		c.tick(60)
