@@ -331,8 +331,13 @@ class Entity:
 						self.y = platform.bottom
 						pygame.draw.line(totalScreen, (0, 255, 0), platform.bottomleft, platform.bottomright, 5)
 		# Respawning, Crashing, and Moving
-		if self.y > BOARDSIZE[1] * CELLSIZE:
-			self.die()
+		floor = BOARDSIZE[1] * CELLSIZE
+		floor -= 10
+		if self.y > floor:
+			self.y = floor
+			self.vy = -5
+		if self.x < 0: self.vx += 0.5
+		if self.x > BOARDSIZE[0] * CELLSIZE: self.vx -= 0.5
 		if self.vx > 20 or self.vy > 20 or self.vx < -20 or self.vy < -20:
 			self.vx = 0
 			self.vy = 0
@@ -350,7 +355,11 @@ class Entity:
 		else: errormsg(self, "was removed twice")
 	def getBlock(self):
 		if not insideBoard(round(self.x / CELLSIZE), round(self.y / CELLSIZE)):
-			self.die(False) # Out of bounds
+			# Out of bounds - clamp to edge
+			if self.x < 0: self.x = 0
+			if self.y < 0: self.y = 0
+			if self.x > BOARDSIZE[0] * CELLSIZE: self.x = BOARDSIZE[0] * CELLSIZE
+			if self.y > BOARDSIZE[1] * CELLSIZE: self.y = BOARDSIZE[1] * CELLSIZE
 			return (0, 0)
 		return (round(self.x / CELLSIZE), round(self.y / CELLSIZE))
 	def createExplosion(self, rad):
@@ -395,8 +404,8 @@ class Monster(Entity):
 		target = player
 		# Go left or right depending on where the target is.
 		if target.x < self.x:
-			self.vx -= 1
-		else: self.vx += 1
+			self.vx -= 0.7
+		else: self.vx += 0.7
 		# If the target is more than half a block above me, jump.
 		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
 		# Sunlight burns!!!
