@@ -27,7 +27,7 @@ c = pygame.time.Clock()
 
 screen = pygame.display.set_mode([min(max(500, len(pallete) * CELLSIZE), 2000), 500 + CELLSIZE])
 
-WORLD, entities, playerpos, items = worldeditor.load()
+WORLD, entities, playerpos, items, health = worldeditor.load()
 
 # PLAYING -------------------------------------------------
 
@@ -120,4 +120,4 @@ while running:
 	c.tick(60)
 pygame.quit()
 
-worldeditor.save(WORLD, entities, playerpos, items)
+worldeditor.save(WORLD, entities, playerpos, items, health)

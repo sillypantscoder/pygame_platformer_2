@@ -60,7 +60,7 @@ def MAIN():
 		e = []
 		for n in entities:
 			if n.save_as != None:
-				e.append([n.save_as, n.x, n.y])
+				e.append([n.save_as, n.x, n.y, n.getSaveData()])
 		worldeditor.save(WORLD, e, [player.x, player.y], items, player.memory["health"])
 
 # WORLD SELECTION -----------------------------------------
@@ -139,13 +139,11 @@ def GENERATORSELECTION():
 	for t in e:
 		newEntity = {
 			"monster": Monster,
-			"exploding_monster": ExplodingMonster,
-			"item_danger": Item,
-			"item_score": ScoreItem,
+			"item": Item,
 			"allay": Allay,
 			"allay_spawner": AllaySpawner
 		}[t[0]]
-		newEntity(t[1], t[2])
+		newEntity(t[1], t[2]).loadSaveData(t[3])
 	player.x, player.y = playerpos
 	for n in i.keys():
 		for z in range(i[n]):
@@ -240,7 +238,7 @@ def explosion(float_cx: float, float_cy: float, rad: int):
 	for l in more:
 		explosion(*l, 2)
 	if random.random() < 0.3:
-		Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
+		Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE)).memory["img"] = "danger"
 
 class Entity:
 	save_as = None
@@ -366,9 +364,13 @@ class Entity:
 	def opt_ai_calc(self):
 		pass
 	def drop(self, item):
-		item(self.x + random.randint(-10, 10), self.y + random.randint(10, 25))
+		return item(self.x + random.randint(-10, 10), self.y + random.randint(10, 25))
 	def initmemory(self):
 		self.memory = {}
+	def getSaveData(self):
+		return {}
+	def loadSaveData(self, data):
+		pass
 
 class Player(Entity):
 	color = (255, 0, 0)
@@ -421,22 +423,22 @@ class Monster(Entity):
 			self.die()
 	def despawn(self):
 		for i in range(random.choice([0, 1, 2, 3])):
-			self.drop(Item)
-
-class ExplodingMonster(Monster):
-	save_as = "exploding_monster"
-	color = (0, 255, 0)
-	def despawn(self):
-		self.createExplosion(3)
-		for i in range(random.choice([0, 1, 2, 3])):
-			self.drop(ScoreItem)
+			self.drop(Item).memory["img"] = "danger"
+	def getSaveData(self):
+		return {"health": self.memory["health"]}
+	def loadSaveData(self, data):
+		self.memory["health"] = data["health"]
 
 class Item(Entity):
-	save_as = "item_danger"
+	save_as = "item"
 	def initmemory(self):
-		self.memory = {"img": "danger", "img_surface": None}
+		self.memory = {"img": "", "img_surface": None}
 	def draw(self, playerx, playery):
 		#size = 5 + (self.memory["stacksize"] * 5)
+		if "item/" + self.memory["img"] + ".png" not in textures:
+			errormsg(self, "Item texture not found: " + "item/" + self.memory["img"] + ".png")
+			self.die()
+			return;
 		size = 11
 		self.memory["img_surface"] = pygame.transform.scale(textures["item/" + self.memory["img"] + ".png"], (size, size))
 		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx), self.y + (280 - playery)))
@@ -449,11 +451,10 @@ class Item(Entity):
 				gainitem(self.memory["img"])
 	def opt_ai_calc(self):
 		if self.vy >= 0.5: self.vy = 0.5
-
-class ScoreItem(Item):
-	save_as = "item_score"
-	def initmemory(self):
-		self.memory = {"img": "score", "img_surface": None}
+	def getSaveData(self):
+		return {"img": self.memory["img"]}
+	def loadSaveData(self, data):
+		self.memory["img"] = data["img"]
 
 class Particle(Entity):
 	# Particles do not need to be saved.
@@ -479,8 +480,8 @@ class Particle(Entity):
 		self.memory["ticks"] -= 1
 
 class MovingBlock(Entity):
-	# MovingBlocks cannot be saved because their memory needs to be set afterwards,
-	# which is not possible with the current "list of names" strategy.
+	# MovingBlocks can now be saved!
+	save_as = "moving_block"
 	color = TAN
 	def initmemory(self):
 		self.memory = {"block": "sand"}
@@ -495,6 +496,10 @@ class MovingBlock(Entity):
 			WORLD[b[0]][b[1]] = self.memory["block"]
 		except:
 			errormsg(self, "attempted to re-place block at: " + str(b[0]) + ", " + str(b[1]))
+	def getSaveData(self):
+		return {"block": self.memory["block"]}
+	def loadSaveData(self, data):
+		self.memory["block"] = data["block"]
 
 class Allay(Entity):
 	save_as = "allay"
@@ -564,10 +569,6 @@ def PLAYING():
 					if items["danger"] >= 10:
 						items["danger"] -= 10
 						player.createExplosion(2)
-				if keys[pygame.K_q]:
-					for t in entities:
-						if isinstance(t, (Item, Monster, Particle)) and not isinstance(t, ScoreItem):
-							t.die()
 				if keys[pygame.K_w]:
 					AllaySpawner(player.x, player.y)
 				if keys[pygame.K_ESCAPE]:

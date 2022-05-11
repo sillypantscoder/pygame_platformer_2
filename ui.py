@@ -105,8 +105,7 @@ class UI:
 		self.items.append(item)
 		return self
 	def render(self, mousepos, mouseclicked):
-		scrn_height = 560
-		scrn_width = 500
+		scrn_width, scrn_height = settings["screen"].get_size()
 		rendered_items = []
 		cum_y = 0
 		for item in self.items:
@@ -160,8 +159,10 @@ def listmenu(getitemcallback: "typing.Callable[[function], list[UIElement]]"):
 	for item in getitemcallback(finish):
 		ui.add(item)
 		index += 1
+	c = pygame.time.Clock()
 	while not finished[0]:
 		render_ui(ui)
+		c.tick(60)
 	return finished[1]
 
 def uimenu(ui: UI):
