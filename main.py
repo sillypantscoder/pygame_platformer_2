@@ -141,7 +141,8 @@ def GENERATORSELECTION():
 			"monster": Monster,
 			"item": Item,
 			"allay": Allay,
-			"allay_spawner": AllaySpawner
+			"allay_spawner": AllaySpawner,
+			"moving_block": MovingBlock
 		}[t[0]]
 		newEntity(t[1], t[2]).loadSaveData(t[3])
 	player.x, player.y = playerpos
@@ -330,11 +331,30 @@ class Entity:
 		# Respawning, Crashing, and Moving
 		floor = BOARDSIZE[1] * CELLSIZE
 		floor -= 10
-		if self.y > floor:
-			self.y = floor
-			self.vy = -5
-		if self.x < 0: self.vx += 0.5
-		if self.x > BOARDSIZE[0] * CELLSIZE: self.vx -= 0.5
+		if not isinstance(self, Particle):
+			if self.y > floor:
+				self.y = floor
+				self.vy = -5
+				BounceParticle(self.x, self.y).memory["ticks"] = 50
+			if self.x < 0:
+				self.vx += 0.5
+			if self.x > BOARDSIZE[0] * CELLSIZE:
+				self.vx -= 0.5
+			if self.x > BOARDSIZE[0] * CELLSIZE or self.x < 0:
+				# Physics does not really work outside of the board...
+				self.vy -= 0.01
+				BounceParticle(self.x, self.y)
+				if random.random() < 0.01:
+					self.x += random.randint(-CELLSIZE, CELLSIZE)
+					self.y += random.randint(-CELLSIZE, CELLSIZE)
+					Particle(self.x, self.y)
+				if "health" in self.memory:
+					if isinstance(self, Player):
+						self.memory["health"] -= 0.01
+						# disable natural healing
+					else: self.memory["health"] *= 0.99999
+				if random.random() < 0.0001:
+					Monster(self.x + random.randint(-CELLSIZE, CELLSIZE), self.y + random.randint(-CELLSIZE, CELLSIZE))
 		if self.vx > 20 or self.vy > 20 or self.vx < -20 or self.vy < -20:
 			self.vx = 0
 			self.vy = 0
@@ -478,6 +498,18 @@ class Particle(Entity):
 		self.vy = 0
 		self.vx = 0
 		self.memory["ticks"] -= 1
+
+class BounceParticle(Particle):
+	def initmemory(self):
+		self.memory = {"ticks": 15}
+	def tickmove(self):
+		self.vy = 0
+		self.vx = 0
+		self.memory["ticks"] -= 0.8
+		if self.memory["ticks"] <= 0:
+			self.die()
+	def draw(self, playerx, playery):
+		pygame.draw.circle(screen, (0, 67, 71), (round(self.x + (250 - playerx)), round(self.y + (280 - playery))), self.memory["ticks"], 5)
 
 class MovingBlock(Entity):
 	# MovingBlocks can now be saved!
