@@ -337,16 +337,19 @@ class Entity:
 				self.vy = -5
 				BounceParticle(self.x, self.y).memory["ticks"] = 50
 			if self.x < 0:
-				self.vx += 0.5
+				self.vx += 0.1
 			if self.x > BOARDSIZE[0] * CELLSIZE:
-				self.vx -= 0.5
+				self.vx -= 0.1
 			if self.x > BOARDSIZE[0] * CELLSIZE or self.x < 0:
 				# Physics does not really work outside of the board...
 				self.vy -= 0.01
+				self.vx *= 2
 				BounceParticle(self.x, self.y)
 				if random.random() < 0.01:
 					self.x += random.randint(-CELLSIZE, CELLSIZE)
 					self.y += random.randint(-CELLSIZE, CELLSIZE)
+					self.vy *= -2
+					self.vx *= -1
 					Particle(self.x, self.y)
 				if "health" in self.memory:
 					if isinstance(self, Player):
@@ -606,10 +609,10 @@ def PLAYING():
 				if keys[pygame.K_ESCAPE]:
 					if PAUSE(): return True;
 					threading.Thread(target=PLAYING_ASYNC_LIGHT).start()
-		if keys[pygame.K_z]:
-			if items["danger"] >= 5:
-				items["danger"] -= 5
-				Monster(random.randint(0, BOARDSIZE[0] * CELLSIZE), random.randint(0, BOARDSIZE[1] * CELLSIZE))
+				if keys[pygame.K_f]:
+					if items["danger"] > 10 and player.memory["health"] < PLAYERHEALTH - 10:
+						items["danger"] -= 10
+						player.memory["health"] += 10
 		# DRAWING ------------
 		screen.fill(GRAY)
 		totalScreen.fill(WHITE)
