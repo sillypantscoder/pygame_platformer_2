@@ -582,6 +582,7 @@ def PLAYING():
 	global entities
 	global player
 	global items
+	global WORLD
 	tickingrefresh: int = 10
 	tickingcount: int = 0
 	fpscalc = datetime.datetime.now()
@@ -690,15 +691,24 @@ def PLAYING():
 								# Or flow right
 								if insideBoard(x + 1, y) and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
 									sets.append({"pos": (x + 1, y), "state": cell})
+			# Construct the minimap
 			minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
+			if player.x < 0:
+				minimap.set_alpha((player.x / 5) + 255)
+			elif player.x > BOARDSIZE[0] * CELLSIZE:
+				minimap.set_alpha((((BOARDSIZE[0] * CELLSIZE) - player.x) / 5) + 255)
+			# Construct the large minimap
 			largeminimap = totalScreen.copy()
 			largeminimapsize = (BOARDSIZE[0] + BOARDSIZE[1]) * 3
+			# draw the entities
 			pygame.draw.circle(largeminimap, RED, (player.x, player.y), largeminimapsize / 6)
 			for e in entities:
 				if isinstance(e, Monster):
 					pygame.draw.circle(largeminimap, GREEN, (e.x, e.y), largeminimapsize / 6)
+			# resize the minimap
 			largeminimap = pygame.transform.scale(largeminimap, [largeminimapsize, largeminimapsize])
 			largeminimap = pygame.Cursor((round(largeminimapsize / 2), round(largeminimapsize / 2)), largeminimap)
+			# set the cursor
 			if (pos[0] < BOARDSIZE[0]) and (pos[1] < BOARDSIZE[1]):
 				pygame.mouse.set_cursor(largeminimap)
 			else:
@@ -724,6 +734,35 @@ def PLAYING():
 			if t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 				t.die()
 		if player.memory["health"] <= 0: return True
+		# Level switching
+		if player.x < -100 * CELLSIZE:
+			generators = []
+			for filename in rawStyleItems:
+				if "generators/" in filename:
+					if filename != "generators/":
+						generators.append(rawStyleItems[filename].decode("UTF-8"))
+			generator = random.choice(generators)
+			f = open("generator.py", "w")
+			f.write(generator)
+			f.close()
+			system("python3 generator.py")
+			# Load the new world
+			for e in entities: e.die()
+			WORLD, e, playerpos, i, player.memory["health"] = worldeditor.load()
+			for t in e:
+				newEntity = {
+					"monster": Monster,
+					"item": Item,
+					"allay": Allay,
+					"allay_spawner": AllaySpawner,
+					"moving_block": MovingBlock
+				}[t[0]]
+				newEntity(t[1], t[2]).loadSaveData(t[3])
+			player.x, player.y = playerpos
+			for n in i.keys():
+				for z in range(i[n]):
+					gainitem(n)
+			player.x = 100 * CELLSIZE
 		# FLIP -----------------
 		# Framerate
 		if tickingrefresh == 1:
