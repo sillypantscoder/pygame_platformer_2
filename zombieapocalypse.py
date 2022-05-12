@@ -71,7 +71,7 @@ def MAIN():
 		e = []
 		for n in entities:
 			if n.save_as != None:
-				e.append([n.save_as, n.x, n.y])
+				e.append([n.save_as, n.x, n.y, n.getSaveData()])
 		worldeditor.save(WORLD, e, [player.x, player.y], items, player.memory["health"])
 		ENDGAME()
 
@@ -152,13 +152,12 @@ def GENERATORSELECTION():
 	for t in e:
 		newEntity = {
 			"monster": Monster,
-			"exploding_monster": ExplodingMonster,
-			"item_danger": Item,
-			"item_score": ScoreItem,
+			"item": Item,
 			"allay": Allay,
-			"allay_spawner": AllaySpawner
+			"allay_spawner": AllaySpawner,
+			"moving_block": MovingBlock
 		}[t[0]]
-		newEntity(t[1], t[2])
+		newEntity(t[1], t[2]).loadSaveData(t[3])
 	player.x, player.y = playerpos
 	for n in i.keys():
 		for z in range(i[n]):
@@ -253,7 +252,7 @@ def explosion(float_cx: float, float_cy: float, rad: int):
 	for l in more:
 		explosion(*l, 2)
 	if random.random() < 0.3:
-		Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE))
+		Item((cx * CELLSIZE) + (0.5 * CELLSIZE), (cy * CELLSIZE) + (0.5 * CELLSIZE)).memory["img"] = "gem"
 
 class Entity:
 	save_as = None
@@ -345,11 +344,33 @@ class Entity:
 		# Respawning, Crashing, and Moving
 		floor = BOARDSIZE[1] * CELLSIZE
 		floor -= 10
-		if self.y > floor:
-			self.y = floor
-			self.vy = -5
-		if self.x < 0: self.vx += 0.5
-		if self.x > BOARDSIZE[0] * CELLSIZE: self.vx -= 0.5
+		if not isinstance(self, Particle):
+			if self.y > floor:
+				self.y = floor
+				self.vy = -5
+				BounceParticle(self.x, self.y).memory["ticks"] = 50
+			if self.x < 0:
+				self.vx += 0.1
+			if self.x > BOARDSIZE[0] * CELLSIZE:
+				self.vx -= 0.1
+			if self.x > BOARDSIZE[0] * CELLSIZE or self.x < 0:
+				# Physics does not really work outside of the board...
+				self.vy -= 0.01
+				self.vx *= 2
+				BounceParticle(self.x, self.y)
+				if random.random() < 0.01:
+					self.x += random.randint(-CELLSIZE, CELLSIZE)
+					self.y += random.randint(-CELLSIZE, CELLSIZE)
+					self.vy *= -2
+					self.vx *= -1
+					Particle(self.x, self.y)
+				if "health" in self.memory:
+					if isinstance(self, Player):
+						self.memory["health"] -= 0.01
+						# disable natural healing
+					else: self.memory["health"] *= 0.99999
+				if random.random() < 0.0001:
+					Monster(self.x + random.randint(-CELLSIZE, CELLSIZE), self.y + random.randint(-CELLSIZE, CELLSIZE))
 		if self.vx > 20 or self.vy > 20 or self.vx < -20 or self.vy < -20:
 			self.vx = 0
 			self.vy = 0
@@ -379,9 +400,13 @@ class Entity:
 	def opt_ai_calc(self):
 		pass
 	def drop(self, item):
-		item(self.x + random.randint(-10, 10), self.y + random.randint(10, 25))
+		return item(self.x + random.randint(-10, 10), self.y + random.randint(10, 25))
 	def initmemory(self):
 		self.memory = {}
+	def getSaveData(self):
+		return {}
+	def loadSaveData(self, data):
+		pass
 
 class Player(Entity):
 	color = (255, 0, 0)
@@ -394,7 +419,7 @@ class Player(Entity):
 			if isinstance(self.memory["target"], Monster): color = RED
 			pygame.draw.line(screen, color, (self.x + mvx + 5, self.y + mvy + 5), (self.memory["target"].x + mvx + 5, self.memory["target"].y + mvy + 5))
 	def initmemory(self):
-		self.memory = {"health": maxhealth, "direction": None, "target": None}
+		self.memory = {"health": PLAYERHEALTH, "direction": None, "target": None}
 		entities.remove(self)
 	def tickmove(self):
 		if autoapocalypse:
@@ -444,6 +469,7 @@ class Monster(Entity):
 	def initmemory(self):
 		self.memory = {"direction": None}
 	def tickmove(self):
+		# If we are near the player, decrease the player's health.
 		if pygame.Rect(self.x, self.y, 10, 10).colliderect(pygame.Rect(player.x, player.y, 10, 10)):
 			player.memory["health"] -= 1
 	def opt_ai_calc(self):
@@ -457,22 +483,20 @@ class Monster(Entity):
 		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
 	def despawn(self):
 		for i in range(random.choice([0, 1, 2, 3])):
-			self.drop(Item)
-
-class ExplodingMonster(Monster):
-	save_as = "exploding_monster"
-	color = (0, 255, 0)
-	def despawn(self):
-		self.createExplosion(3)
-		for i in range(random.choice([0, 1, 2, 3])):
-			self.drop(ScoreItem)
+			self.drop(Item).memory["img"] = "gem"
+	def getSaveData(self):
+		return {"health": 255}
 
 class Item(Entity):
-	save_as = "item_danger"
+	save_as = "item"
 	def initmemory(self):
-		self.memory = {"img": "gem", "img_surface": None}
+		self.memory = {"img": "", "img_surface": None}
 	def draw(self, playerx, playery):
 		#size = 5 + (self.memory["stacksize"] * 5)
+		if "item/" + self.memory["img"] + ".png" not in textures:
+			errormsg(self, "Item texture not found: " + "item/" + self.memory["img"] + ".png")
+			self.die()
+			return;
 		size = 11
 		self.memory["img_surface"] = pygame.transform.scale(textures["item/" + self.memory["img"] + ".png"], (size, size))
 		screen.blit(self.memory["img_surface"], (self.x + (250 - playerx), self.y + (280 - playery)))
@@ -485,11 +509,10 @@ class Item(Entity):
 				gainitem(self.memory["img"])
 	def opt_ai_calc(self):
 		if self.vy >= 0.5: self.vy = 0.5
-
-class ScoreItem(Item):
-	save_as = "item_score"
-	def initmemory(self):
-		self.memory = {"img": "score", "img_surface": None}
+	def getSaveData(self):
+		return {"img": self.memory["img"]}
+	def loadSaveData(self, data):
+		self.memory["img"] = data["img"]
 
 class Particle(Entity):
 	# Particles do not need to be saved.
@@ -514,9 +537,21 @@ class Particle(Entity):
 		self.vx = 0
 		self.memory["ticks"] -= 1
 
+class BounceParticle(Particle):
+	def initmemory(self):
+		self.memory = {"ticks": 15}
+	def tickmove(self):
+		self.vy = 0
+		self.vx = 0
+		self.memory["ticks"] -= 0.8
+		if self.memory["ticks"] <= 0:
+			self.die()
+	def draw(self, playerx, playery):
+		pygame.draw.circle(screen, (0, 67, 71), (round(self.x + (250 - playerx)), round(self.y + (280 - playery))), self.memory["ticks"], 5)
+
 class MovingBlock(Entity):
-	# MovingBlocks cannot be saved because their memory needs to be set afterwards,
-	# which is not possible with the current "list of names" strategy.
+	# MovingBlocks can now be saved!
+	save_as = "moving_block"
 	color = TAN
 	def initmemory(self):
 		self.memory = {"block": "sand"}
@@ -531,6 +566,10 @@ class MovingBlock(Entity):
 			WORLD[b[0]][b[1]] = self.memory["block"]
 		except:
 			errormsg(self, "attempted to re-place block at: " + str(b[0]) + ", " + str(b[1]))
+	def getSaveData(self):
+		return {"block": self.memory["block"]}
+	def loadSaveData(self, data):
+		self.memory["block"] = data["block"]
 
 class Allay(Entity):
 	save_as = "allay"
@@ -550,8 +589,8 @@ class Allay(Entity):
 		# 1% chance kill myself.
 		if random.random() < 0.01: self.die()
 		if target.x < self.x:
-			self.vx -= 1
-		else: self.vx += 1
+			self.vx -= 0.95
+		else: self.vx += 0.95
 		# If the target is more than half a block above me, jump.
 		if target.y - self.y < -(CELLSIZE / 2) and self.canjump: self.vy -= 3.1
 
@@ -583,7 +622,6 @@ def gainitem(item):
 		items[item] = 0
 	items[item] += 1
 
-maxhealth = 100
 entities: "list[Entity]" = []
 player = Player((BOARDSIZE[0] / 2) * CELLSIZE, (BOARDSIZE[1] / 2) * CELLSIZE)
 items = {
@@ -610,13 +648,9 @@ def PLAYING():
 			if event.type == pygame.KEYDOWN:
 				keys = pygame.key.get_pressed()
 				if keys[pygame.K_SPACE]:
-					if items["danger"] >= 10:
-						items["danger"] -= 10
+					if items["gem"] >= 10:
+						items["gem"] -= 10
 						player.createExplosion(2)
-				if keys[pygame.K_q]:
-					for t in entities:
-						if isinstance(t, (Item, Monster, Particle)):
-							t.die()
 				if keys[pygame.K_ESCAPE]:
 					if PAUSE(): return True;
 					threading.Thread(target=PLAYING_ASYNC_LIGHT).start()
@@ -729,13 +763,13 @@ def PLAYING():
 		# Debug info
 		pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
 		screen.blit(minimap, (0, 0))
-		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
+		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(round(player.memory['health']))}", True, BLACK)
 		screen.blit(w, (BOARDSIZE[0], 0))
 		w = FONT.render(f"{str(len(entities))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
 		screen.blit(w, (0, BOARDSIZE[1]))
 		# Health bar
 		pygame.draw.rect(screen, RED, pygame.Rect(0, 560, 500, 10))
-		pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * (500 / maxhealth), 10))
+		pygame.draw.rect(screen, GREEN, pygame.Rect(0, 560, player.memory["health"] * (500 / PLAYERHEALTH), 10))
 		# Flip
 		pygame.display.flip()
 		c.tick(60)
@@ -755,13 +789,13 @@ def PLAYING_ASYNC_LIGHT():
 						hasLight = False
 				LIGHT[x][y] = hasLight
 				# 3. If the block is dark and is non-solid, there is a chance to spawn a monster
-				if (not hasLight) and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.00001:
+				if (not hasLight) and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.0001:
 					Monster(x * CELLSIZE, y * CELLSIZE)
-				if BLOCKS[cell]["collision"] == "spawner" and random.random() < 0.01:
+				if BLOCKS[cell]["collision"] == "spawner" and random.random() < 0.1:
 					Monster(x * CELLSIZE, y * CELLSIZE)
 				# 4. There is always a chance to spawn an Allay
 				#    because we are already spawning things so why not
-				if BLOCKS[cell]["collision"] == "empty" and random.random() < 0.0001:
+				if BLOCKS[cell]["collision"] == "empty" and random.random() < 0.00001:
 					Allay(x * CELLSIZE, y * CELLSIZE)
 		c.tick(60)
 
@@ -822,7 +856,7 @@ def PAUSE():
 		pygame.draw.rect(minimap_pause, GRAY, pygame.Rect(15, 5, 5, 20))
 		pygame.draw.rect(minimap_pause, BLACK, pygame.Rect(16, 6, 5, 20))
 		screen.blit(minimap_pause, (0, 0))
-		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(player.memory['health'])}", True, BLACK)
+		w = FONT.render(f"Score: {str(items['gem'])}, HP: {str(round(player.memory['health']))}", True, BLACK)
 		screen.blit(w, (BOARDSIZE[0], 0))
 		w = FONT.render(f"{str(len(entities))} entities", True, BLACK)
 		screen.blit(w, (0, BOARDSIZE[1]))

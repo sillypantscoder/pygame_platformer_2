@@ -48,8 +48,7 @@ def MAIN():
 		entities = []
 		player = Player(100, 0)
 		items = {
-			"danger": 0,
-			"score": 0
+			"danger": 0
 		}
 		WORLDSELECTION()
 		GENERATORSELECTION()
@@ -545,7 +544,7 @@ class Allay(Entity):
 		targetdist = 1000
 		for t in entities:
 			dist = math.sqrt(math.pow(t.x - self.x, 2) + math.pow(t.y - self.y, 2))
-			# Find the closest Item.
+			# Find the closest Item or Monster.
 			if dist < targetdist and isinstance(t, (Item, Monster)):
 				target = t
 				targetdist = dist
@@ -574,8 +573,7 @@ def gainitem(item):
 entities: "list[Entity]" = []
 player = Player(100, 0)
 items = {
-	"danger": 0,
-	"score": 0
+	"danger": 0
 }
 game_playing = False
 def PLAYING():
@@ -774,7 +772,7 @@ def PLAYING():
 		# Debug info
 		pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, 500, 60))
 		screen.blit(minimap, (0, 0))
-		w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
+		w = FONT.render(f"{str(items['danger'])} danger items", True, BLACK)
 		screen.blit(w, (BOARDSIZE[0], 0))
 		w = FONT.render(f"{str(len(entities))} entities, {str(tickingcount)} ticking; FPS: {fps}", True, BLACK)
 		screen.blit(w, (0, BOARDSIZE[1]))
@@ -868,7 +866,7 @@ def PAUSE():
 		pygame.draw.rect(minimap_pause, GRAY, pygame.Rect(15, 5, 5, 20))
 		pygame.draw.rect(minimap_pause, BLACK, pygame.Rect(16, 6, 5, 20))
 		screen.blit(minimap_pause, (0, 0))
-		w = FONT.render(f"{str(items['danger'])} danger items; Score: {str(items['score'])}", True, BLACK)
+		w = FONT.render(f"{str(items['danger'])} danger items", True, BLACK)
 		screen.blit(w, (BOARDSIZE[0], 0))
 		w = FONT.render(f"{str(len(entities))} entities", True, BLACK)
 		screen.blit(w, (0, BOARDSIZE[1]))
