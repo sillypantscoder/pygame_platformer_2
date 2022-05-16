@@ -77,7 +77,7 @@ def WORLDSELECTION():
 	doSpawning = True
 	running = True
 	while running:
-		option = ui.menu("Platformer", ["New world >", "Load save file >", "", "Always tick entities: " + str(alwaystick), "Spawning: " + str(doSpawning), "", "Extensions >"])
+		option = ui.menu("Platformer", ["New world >", "Load save file >", "", "Always tick entities: " + ("Yes" if alwaystick else "No"), "Spawning: " + ("On" if doSpawning else "Off"), "", "Extensions >"])
 		if option == 0:
 			running = False
 		elif option == 1:
@@ -798,13 +798,13 @@ def PLAYING_ASYNC_LIGHT():
 						hasLight = False
 				LIGHT[x][y] = hasLight
 				# 3. If the block is dark and is non-solid, there is a chance to spawn a monster
-				if (not hasLight) and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.00001:
+				if (not hasLight) and doSpawning and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.00001:
 					Monster(x * CELLSIZE, y * CELLSIZE)
-				if BLOCKS[cell]["collision"] == "spawner" and random.random() < 0.01:
+				if doSpawning and BLOCKS[cell]["collision"] == "spawner" and random.random() < 0.01:
 					Monster(x * CELLSIZE, y * CELLSIZE)
 				# 4. There is always a chance to spawn an Allay
 				#    because we are already spawning things so why not
-				if BLOCKS[cell]["collision"] == "empty" and random.random() < 0.0001:
+				if doSpawning and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.0001:
 					Allay(x * CELLSIZE, y * CELLSIZE)
 		c.tick(60)
 
