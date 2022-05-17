@@ -689,6 +689,10 @@ def PLAYING():
 								# Or flow right
 								if insideBoard(x + 1, y) and WORLD[x + 1][y] in BLOCKS and BLOCKS[WORLD[x + 1][y]]["collision"] == "empty":
 									sets.append({"pos": (x + 1, y), "state": cell})
+					else:
+						pygame.draw.rect(totalScreen, (255, 0, 255), cellrect)
+						pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.topleft, CELLSIZE / 2, CELLSIZE / 2))
+						pygame.draw.rect(totalScreen, (0, 0, 0), pygame.Rect(*cellrect.center, CELLSIZE / 2, CELLSIZE / 2))
 			# Construct the minimap
 			minimap = pygame.transform.scale(totalScreen, BOARDSIZE)
 			if player.x < 0:
@@ -791,21 +795,23 @@ def PLAYING_ASYNC_LIGHT():
 		for x in range(BOARDSIZE[0]):
 			for y in range(BOARDSIZE[1]):
 				cell = WORLD[x][y]
-				# 2. Check whether the block is exposed to the roof
-				hasLight = True
-				for cy in range(0, y):
-					if BLOCKS[WORLD[x][cy]]["collision"] != "empty":
-						hasLight = False
-				LIGHT[x][y] = hasLight
-				# 3. If the block is dark and is non-solid, there is a chance to spawn a monster
-				if (not hasLight) and doSpawning and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.00001:
-					Monster(x * CELLSIZE, y * CELLSIZE)
-				if doSpawning and BLOCKS[cell]["collision"] == "spawner" and random.random() < 0.01:
-					Monster(x * CELLSIZE, y * CELLSIZE)
-				# 4. There is always a chance to spawn an Allay
-				#    because we are already spawning things so why not
-				if doSpawning and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.0001:
-					Allay(x * CELLSIZE, y * CELLSIZE)
+				if cell in BLOCKS:
+					# 2. Check whether the block is exposed to the roof
+					hasLight = True
+					for cy in range(0, y):
+						if WORLD[x][cy] not in BLOCKS or BLOCKS[WORLD[x][cy]]["collision"] != "empty":
+							hasLight = False
+					LIGHT[x][y] = hasLight
+					# 3. If the block is dark and is non-solid, there is a chance to spawn a monster
+					if (not hasLight) and doSpawning and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.00001:
+						Monster(x * CELLSIZE, y * CELLSIZE)
+					if doSpawning and BLOCKS[cell]["collision"] == "spawner" and random.random() < 0.01:
+						Monster(x * CELLSIZE, y * CELLSIZE)
+					# 4. There is always a chance to spawn an Allay
+					#    because we are already spawning things so why not
+					if doSpawning and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.0001:
+						Allay(x * CELLSIZE, y * CELLSIZE)
+				else: LIGHT[x][y] = False
 		c.tick(60)
 
 # Pause menu
