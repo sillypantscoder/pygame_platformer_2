@@ -1,4 +1,4 @@
-from os import listdir, system
+from os import listdir, system, environ
 import sys
 import random
 import pygame
@@ -10,8 +10,9 @@ from basics import *
 import worldeditor
 import ui
 import threading
-
+import requests
 import warnings
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 pygame.font.init()
@@ -19,6 +20,8 @@ pygame.font.init()
 WORLD: "list[list[str]]" = None
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
+username = ""
+if "USERNAME" in environ and environ["USERNAME"] != "": username = environ["USERNAME"]
 
 screen = pygame.display.set_mode([500, 570])
 ui.init(screen, FONT)
@@ -408,9 +411,41 @@ class Player(Entity):
 		if keys[pygame.K_UP] and self.canjump:
 			self.vy = -3.1
 		self.memory["health"] += 0.01
+	def opt_ai_calc(self):
+		if username and tickingrefresh == 0:
+			r = requests.post("http://localhost:8080/setpos/" + username, data=json.dumps([self.x, self.y]))
 	def die(self):
 		self.x = 100
 		self.y = 0
+
+class ExternalPlayer(Entity):
+	color = (255, 0, 0)
+	def initmemory(self):
+		self.memory = {"username": ""}
+	def opt_ai_calc(self):
+		if self.memory["username"] == "":
+			super().die()
+			return;
+		self.vx = 0
+		self.vy = 0
+		if tickingrefresh == 0:
+			r = requests.get("http://localhost:8080/getpos/" + self.memory["username"])
+			self.x, self.y = json.loads(r.text)
+	def die(self):
+		self.x = 100
+		self.y = 0
+
+class ExternalPlayerSetup(Entity):
+	color = (255, 0, 0)
+	def tickmove(self):
+		for e in entities:
+			if isinstance(e, ExternalPlayer):
+				e.die()
+		r = requests.get("http://localhost:8080/players")
+		for player in r.text.split("\n"):
+			if player == "": continue
+			ExternalPlayer(0, 0).memory = {"username": player}
+		self.die()
 
 class Monster(Entity):
 	save_as = "monster"
@@ -576,12 +611,14 @@ items = {
 	"danger": 0
 }
 game_playing = False
+tickingrefresh: int = 10
 def PLAYING():
 	global entities
 	global player
 	global items
 	global WORLD
-	tickingrefresh: int = 10
+	global tickingrefresh
+	tickingrefresh = 10
 	tickingcount: int = 0
 	fpscalc = datetime.datetime.now()
 	fps: int = "???"
@@ -789,6 +826,7 @@ def PLAYING():
 
 def PLAYING_ASYNC_LIGHT():
 	global LIGHT
+	ExternalPlayerSetup(0, 0)
 	c = pygame.time.Clock()
 	while game_playing:
 		# 1. Iterate over every block
