@@ -163,7 +163,7 @@ def EXTENSIONS():
 		if option < 2:
 			pass
 		else:
-			system("python3 updateenv.py --add-extension " + ex[option - 3])
+			system("python3 updateenv.py --add-extension " + ex[option - 2])
 	running = True
 	while running:
 		currentExtension = zipHelpers.extract_zip("style_env.zip").items["meta.txt"].decode("UTF-8")[:-1]

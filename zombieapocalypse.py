@@ -350,9 +350,9 @@ class Entity:
 				self.vy = -5
 				BounceParticle(self.x, self.y).memory["ticks"] = 50
 			if self.x < 0:
-				self.vx += 0.1
+				self.vx += 0.2
 			if self.x > BOARDSIZE[0] * CELLSIZE:
-				self.vx -= 0.1
+				self.vx -= 0.2
 			if self.x > BOARDSIZE[0] * CELLSIZE or self.x < 0:
 				# Physics does not really work outside of the board...
 				self.vy -= 0.01
@@ -788,8 +788,8 @@ def PLAYING_ASYNC_LIGHT():
 					if BLOCKS[WORLD[x][cy]]["collision"] != "empty":
 						hasLight = False
 				LIGHT[x][y] = hasLight
-				# 3. If the block is dark and is non-solid, there is a chance to spawn a monster
-				if (not hasLight) and BLOCKS[cell]["collision"] == "empty" and random.random() < 0.0001:
+				# 3. If the block is non-solid, there is a chance to spawn a monster
+				if BLOCKS[cell]["collision"] == "empty" and random.random() < 0.0001:
 					Monster(x * CELLSIZE, y * CELLSIZE)
 				if BLOCKS[cell]["collision"] == "spawner" and random.random() < 0.1:
 					Monster(x * CELLSIZE, y * CELLSIZE)
