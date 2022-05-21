@@ -80,7 +80,7 @@ def WORLDSELECTION():
 	doSpawning = True
 	running = True
 	while running:
-		option = ui.menu("Platformer", ["New world >", "Load save file >", "", "Always tick entities: " + ("Yes" if alwaystick else "No"), "Spawning: " + ("On" if doSpawning else "Off"), "", "Extensions >"])
+		option = ui.menu("Platformer", ["New world >", "Load server file >", "", "Always tick entities: " + ("Yes" if alwaystick else "No"), "Spawning: " + ("On" if doSpawning else "Off"), "", "Extensions >"])
 		if option == 0:
 			running = False
 		elif option == 1:
@@ -773,35 +773,7 @@ def PLAYING():
 			if t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 				t.die()
 		if player.memory["health"] <= 0: return True
-		# Level switching
-		if player.x < -100 * CELLSIZE:
-			generators = []
-			for filename in rawStyleItems:
-				if "generators/" in filename:
-					if filename != "generators/":
-						generators.append(rawStyleItems[filename].decode("UTF-8"))
-			generator = random.choice(generators)
-			f = open("generator.py", "w")
-			f.write(generator)
-			f.close()
-			system("python3 generator.py")
-			# Load the new world
-			for e in entities: e.die()
-			WORLD, e, playerpos, i, player.memory["health"] = worldeditor.load()
-			for t in e:
-				newEntity = {
-					"monster": Monster,
-					"item": Item,
-					"allay": Allay,
-					"allay_spawner": AllaySpawner,
-					"moving_block": MovingBlock
-				}[t[0]]
-				newEntity(t[1], t[2]).loadSaveData(t[3])
-			player.x, player.y = playerpos
-			for n in i.keys():
-				for z in range(i[n]):
-					gainitem(n)
-			player.x = 100 * CELLSIZE
+		# Level switching is incompatible with server...
 		# FLIP -----------------
 		# Framerate
 		if tickingrefresh == 1:

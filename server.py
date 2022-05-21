@@ -4,6 +4,17 @@ hostName = "localhost"
 serverPort = 8080
 playerPositions = {}
 
+def readFile(path: str) -> str:
+	f = open(path, "r")
+	content = f.read()
+	f.close()
+	return content
+
+def writeFile(path: str, content: str):
+	f = open(path, "w")
+	f.write(content)
+	f.close()
+
 def get(path: str):
 	if path == "/":
 		return {
@@ -29,6 +40,14 @@ def get(path: str):
 			},
 			"content": "\n".join(playerPositions.keys())
 		}
+	elif path == "/getworld":
+		return {
+			"status": 200,
+			"headers": {
+				"Content-Type": "text/plain"
+			},
+			"content": readFile("world.json")
+		}
 	else:
 		print(f"Bad request to {path}")
 		return {
@@ -41,6 +60,13 @@ def post(path: str, body: bytes):
 	global playerPositions
 	if path.startswith("/setpos"):
 		playerPositions[path[8:]] = body.decode()
+		return {
+			"status": 200,
+			"headers": {},
+			"content": ""
+		}
+	elif path == "/setworld":
+		writeFile("world.json", body.decode())
 		return {
 			"status": 200,
 			"headers": {},
