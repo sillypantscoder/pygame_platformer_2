@@ -30,7 +30,7 @@ def get(path: str):
 			"headers": {
 				"Content-Type": "text/plain"
 			},
-			"content": playerPositions[path[8:]]
+			"content": playerPositions[path[8:]] if path[8:] in playerPositions else ""
 		}
 	elif path == "/players":
 		return {
@@ -67,6 +67,13 @@ def post(path: str, body: bytes):
 		}
 	elif path == "/setworld":
 		writeFile("world.json", body.decode())
+		return {
+			"status": 200,
+			"headers": {},
+			"content": ""
+		}
+	elif path.startswith("/rmplayer"):
+		del playerPositions[path[10:]]
 		return {
 			"status": 200,
 			"headers": {},

@@ -22,6 +22,7 @@ FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
 username = ""
 if "USERNAME" in environ and environ["USERNAME"] != "": username = environ["USERNAME"]
+server_host = "localhost"
 
 screen = pygame.display.set_mode([500, 570])
 ui.init(screen, FONT)
@@ -58,6 +59,7 @@ def MAIN():
 		game_playing = True
 		c = PLAYING()
 		game_playing = False
+		r = requests.post(f"http://{server_host}:8080/rmplayer/{username}")
 		# SAVING
 		e = []
 		for n in entities:
@@ -413,7 +415,7 @@ class Player(Entity):
 		self.memory["health"] += 0.01
 	def opt_ai_calc(self):
 		if username and tickingrefresh == 0:
-			r = requests.post("http://localhost:8080/setpos/" + username, data=json.dumps([self.x, self.y]))
+			r = requests.post(f"http://{server_host}:8080/setpos/" + username, data=json.dumps([self.x, self.y]))
 	def die(self):
 		self.x = 100
 		self.y = 0
@@ -429,8 +431,11 @@ class ExternalPlayer(Entity):
 		self.vx = 0
 		self.vy = 0
 		if tickingrefresh == 0:
-			r = requests.get("http://localhost:8080/getpos/" + self.memory["username"])
-			self.x, self.y = json.loads(r.text)
+			r = requests.get(f"http://{server_host}:8080/getpos/" + self.memory["username"])
+			if r.text == "":
+				super().die()
+			else:
+				self.x, self.y = json.loads(r.text)
 	def die(self):
 		self.x = 100
 		self.y = 0
@@ -441,7 +446,7 @@ class ExternalPlayerSetup(Entity):
 		for e in entities:
 			if isinstance(e, ExternalPlayer):
 				e.die()
-		r = requests.get("http://localhost:8080/players")
+		r = requests.get(f"http://{server_host}:8080/players")
 		for player in r.text.split("\n"):
 			if player == "": continue
 			ExternalPlayer(0, 0).memory = {"username": player}
