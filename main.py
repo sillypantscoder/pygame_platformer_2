@@ -422,6 +422,14 @@ class Player(Entity):
 
 class ExternalPlayer(Entity):
 	color = (255, 0, 0)
+	def draw(self, playerx, playery):
+		# Square
+		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 280 - playery)))
+		# Username
+		r = pygame.font.SysFont(pygame.font.get_default_font(), 20).render(self.memory["username"], True, (0, 0, 0))
+		r_pos = r.get_rect().move(self.x, self.y).move(250 - playerx, 280 - playery).move(r.get_width() * -0.5, -r.get_height() - 5)
+		pygame.draw.rect(screen, (255, 255, 255), r_pos)
+		screen.blit(r, r_pos)
 	def initmemory(self):
 		self.memory = {"username": ""}
 	def opt_ai_calc(self):
