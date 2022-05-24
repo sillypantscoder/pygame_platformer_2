@@ -1,4 +1,4 @@
-from os import listdir, system
+from os import listdir, system, environ
 import sys
 import random
 import pygame
@@ -10,8 +10,9 @@ from basics import *
 import worldeditor
 import ui
 import threading
-
+import requests
 import warnings
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 pygame.font.init()
@@ -19,6 +20,9 @@ pygame.font.init()
 WORLD: "list[list[str]]" = None
 FONT = pygame.font.Font(pygame.font.get_default_font(), 30)
 c = pygame.time.Clock()
+username = ""
+if "USERNAME" in environ and environ["USERNAME"] != "": username = environ["USERNAME"]
+server_host = "localhost"
 
 screen = pygame.display.set_mode([500, 570])
 ui.init(screen, FONT)
@@ -55,6 +59,7 @@ def MAIN():
 		game_playing = True
 		c = PLAYING()
 		game_playing = False
+		r = requests.post(f"http://{server_host}:8080/rmplayer/{username}")
 		# SAVING
 		e = []
 		for n in entities:
@@ -77,7 +82,7 @@ def WORLDSELECTION():
 	doSpawning = True
 	running = True
 	while running:
-		option = ui.menu("Platformer", ["New world >", "Load save file >", "", "Always tick entities: " + ("Yes" if alwaystick else "No"), "Spawning: " + ("On" if doSpawning else "Off"), "", "Extensions >"])
+		option = ui.menu("Platformer", ["New world >", "Load server file >", "", "Always tick entities: " + ("Yes" if alwaystick else "No"), "Spawning: " + ("On" if doSpawning else "Off"), "", "Extensions >"])
 		if option == 0:
 			running = False
 		elif option == 1:
@@ -408,9 +413,52 @@ class Player(Entity):
 		if keys[pygame.K_UP] and self.canjump:
 			self.vy = -3.1
 		self.memory["health"] += 0.01
+	def opt_ai_calc(self):
+		if username and tickingrefresh == 0:
+			r = requests.post(f"http://{server_host}:8080/setpos/" + username, data=json.dumps([self.x, self.y]))
 	def die(self):
 		self.x = 100
 		self.y = 0
+
+class ExternalPlayer(Entity):
+	color = (255, 0, 0)
+	def draw(self, playerx, playery):
+		# Square
+		pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, 10, 10).move((250 - playerx, 280 - playery)))
+		# Username
+		r = pygame.font.SysFont(pygame.font.get_default_font(), 20).render(self.memory["username"], True, (0, 0, 0))
+		r_pos = r.get_rect().move(self.x, self.y).move(250 - playerx, 280 - playery).move(r.get_width() * -0.5, -r.get_height() - 5)
+		pygame.draw.rect(screen, (255, 255, 255), r_pos)
+		screen.blit(r, r_pos)
+	def initmemory(self):
+		self.memory = {"username": ""}
+	def opt_ai_calc(self):
+		if self.memory["username"] == "":
+			super().die()
+			return;
+		self.vx = 0
+		self.vy = 0
+		if tickingrefresh == 0:
+			r = requests.get(f"http://{server_host}:8080/getpos/" + self.memory["username"])
+			if r.text == "":
+				super().die()
+			else:
+				self.x, self.y = json.loads(r.text)
+	def die(self):
+		self.x = 100
+		self.y = 0
+
+class ExternalPlayerSetup(Entity):
+	color = (255, 0, 0)
+	def tickmove(self):
+		for e in entities:
+			if isinstance(e, ExternalPlayer):
+				e.die()
+		r = requests.get(f"http://{server_host}:8080/players")
+		for player in r.text.split("\n"):
+			if player == "": continue
+			ExternalPlayer(0, 0).memory = {"username": player}
+		self.die()
 
 class Monster(Entity):
 	save_as = "monster"
@@ -576,12 +624,14 @@ items = {
 	"danger": 0
 }
 game_playing = False
+tickingrefresh: int = 10
 def PLAYING():
 	global entities
 	global player
 	global items
 	global WORLD
-	tickingrefresh: int = 10
+	global tickingrefresh
+	tickingrefresh = 10
 	tickingcount: int = 0
 	fpscalc = datetime.datetime.now()
 	fps: int = "???"
@@ -736,35 +786,7 @@ def PLAYING():
 			if t.y + 10 > BOARDSIZE[1] * CELLSIZE:
 				t.die()
 		if player.memory["health"] <= 0: return True
-		# Level switching
-		if player.x < -100 * CELLSIZE:
-			generators = []
-			for filename in rawStyleItems:
-				if "generators/" in filename:
-					if filename != "generators/":
-						generators.append(rawStyleItems[filename].decode("UTF-8"))
-			generator = random.choice(generators)
-			f = open("generator.py", "w")
-			f.write(generator)
-			f.close()
-			system("python3 generator.py")
-			# Load the new world
-			for e in entities: e.die()
-			WORLD, e, playerpos, i, player.memory["health"] = worldeditor.load()
-			for t in e:
-				newEntity = {
-					"monster": Monster,
-					"item": Item,
-					"allay": Allay,
-					"allay_spawner": AllaySpawner,
-					"moving_block": MovingBlock
-				}[t[0]]
-				newEntity(t[1], t[2]).loadSaveData(t[3])
-			player.x, player.y = playerpos
-			for n in i.keys():
-				for z in range(i[n]):
-					gainitem(n)
-			player.x = 100 * CELLSIZE
+		# Level switching is incompatible with server...
 		# FLIP -----------------
 		# Framerate
 		if tickingrefresh == 1:
@@ -789,6 +811,7 @@ def PLAYING():
 
 def PLAYING_ASYNC_LIGHT():
 	global LIGHT
+	ExternalPlayerSetup(0, 0)
 	c = pygame.time.Clock()
 	while game_playing:
 		# 1. Iterate over every block
